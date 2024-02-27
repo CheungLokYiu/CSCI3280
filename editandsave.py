@@ -2,17 +2,18 @@ import struct
 import wave
 import numpy as np
 import sounddevice as sd
-start = 5
-end = 15
-speed = 0.75
+
+#edit property
+start = 0
+end = 17
+speed = 0.5
+
+#read original .wav
 wav_file = wave.open('test.wav','r')
 with open('test.wav', 'rb') as file:
     riff_header = file.read(12)
-    # fmt_chunk_header = file.read(14)
-    # fmt_chunk_size = int.from_bytes(fmt_chunk_header[4:], 'little')
-    # fmt_chunk_data = file.read(fmt_chunk_size)
     fmtid = file.read(4)
-    cksize = file.read(4)
+    fmtcksize = file.read(4)
     wFormatTag = file.read(2)
     nchannels = file.read(2)
     nSamplesPerSec = file.read(4)
@@ -20,71 +21,67 @@ with open('test.wav', 'rb') as file:
     nBlockAlign = file.read(2)
     wBitsPerSample = file.read(2)
     datalabel = file.read(4)
-    nframe = file.read(4)
-    audio_data = file.read(int.from_bytes(nframe, 'little') // int.from_bytes(nchannels, 'little') // (int.from_bytes(wBitsPerSample, 'little') // 8) * int.from_bytes(wBitsPerSample, 'little') // int.from_bytes(nBlockAlign, 'little'))
+    datacksize = file.read(4)
+    nframe = int.from_bytes(datacksize, 'little') // int.from_bytes(nBlockAlign, 'little') * int.from_bytes(nchannels, 'little')
+    audio_data = file.read(int.from_bytes(datacksize, 'little'))
     rest = file.read()
-    
-    
 
-    # data_chunk_header = file.read(8)
-    # data_chunk_size = int.from_bytes(data_chunk_header[4:], 'little')
-    # audio_data = file.read(data_chunk_size)
-
-
+#print property of original .wav
 print("riff_header:", riff_header)
-print("fmt", fmtid)
-print("cksize", int.from_bytes(cksize, 'little'))
-print(len(wFormatTag))
+print("fmtid", fmtid)
+print("fmtcksize", int.from_bytes(fmtcksize, 'little'))
 print("wFormatTag", wFormatTag)
 print("nchannels", int.from_bytes(nchannels, 'little'), wav_file.getnchannels())
 print("nSamplesPerSec", int.from_bytes(nSamplesPerSec, 'little'), wav_file.getframerate())
 print("nAvgBytesPerSec", int.from_bytes(nAvgBytesPerSec, 'little'))
-print("nBlockAlign", int.from_bytes(nBlockAlign, 'little'), int.from_bytes(nchannels, 'little') * int.from_bytes(wBitsPerSample, 'little') // 8)
+print("nBlockAlign", int.from_bytes(nBlockAlign, 'little'), int.from_bytes(nchannels, 'little') * int.from_bytes(nBlockAlign, 'little'))
 print("wBitsPerSample", int.from_bytes(wBitsPerSample, 'little'), wav_file.getsampwidth()*8)
 print("datalabel", datalabel)
-print("nframes", int.from_bytes(nframe, 'little'), int.from_bytes(nframe, 'little') // int.from_bytes(nchannels, 'little') // (int.from_bytes(wBitsPerSample, 'little') // 8), wav_file.getnframes())
+print("nframes", nframe, wav_file.getnframes())
 
-bytesperframe = int.from_bytes(nchannels, 'little') * (int.from_bytes(wBitsPerSample, 'little') // 8)*int.from_bytes(nSamplesPerSec, 'little')
-new_audio_data = audio_data[start*bytesperframe:end*bytesperframe]
-nframe = (end-start)*int.from_bytes(nSamplesPerSec, 'little')
-nframe = nframe * int.from_bytes(nchannels, 'little') * (int.from_bytes(wBitsPerSample, 'little') // 8)
-nframe = struct.pack('<i', nframe)
+#change new property accounding to edit property
+bytesperframe = int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little') #get bytes per frame to set read range
+framerate = int.from_bytes(nSamplesPerSec, 'little') #get current framerate
+new_audio_data = audio_data[start*bytesperframe*framerate:end*bytesperframe*framerate] #get new_audio_data of editting range
+nframe = (end-start)*framerate #get new no. of frame
+datacksize = nframe * int.from_bytes(nBlockAlign, 'little') #get new datacksize
+datacksize = struct.pack('<i', datacksize) #change dataacksize to bytes
+framerate = int(framerate * speed) #get new framrate from speed
+nSamplesPerSec = struct.pack('<i', framerate) #get nSamplesPerSec(bytes) from framerate(int)
 
-nSamplesPerSec = int(int.from_bytes(nSamplesPerSec, 'little') * speed)
-nSamplesPerSec = struct.pack('<i', nSamplesPerSec)
-
-with open("myfile-5.wav", "wb") as f:
-    f.write(riff_header+fmtid+cksize+wFormatTag+nchannels+nSamplesPerSec+nAvgBytesPerSec+nBlockAlign+wBitsPerSample+datalabel+nframe+new_audio_data+rest)
-
-
-with open('myfile-5.wav', 'rb') as file:
-    riff_header = file.read(12)
-    fmtid = file.read(4)
-    cksize = file.read(4)
-    wFormatTag = file.read(2)
-    nchannels = file.read(2)
-    nSamplesPerSec = file.read(4)
-    nAvgBytesPerSec = file.read(4)
-    nBlockAlign = file.read(2)
-    wBitsPerSample = file.read(2)
-    datalabel = file.read(4)
-    nframe = file.read(4)
-    audio_data = file.read(int.from_bytes(nframe, 'little') // int.from_bytes(nchannels, 'little') // (int.from_bytes(wBitsPerSample, 'little') // 8) * int.from_bytes(wBitsPerSample, 'little') // int.from_bytes(nBlockAlign, 'little'))
-    rest = file.read()
-
-print("riff_header:", riff_header)
-print("fmt", fmtid)
-print("cksize", int.from_bytes(cksize, 'little'))
-print(len(wFormatTag))
-print("wFormatTag", wFormatTag)
-print("nchannels", int.from_bytes(nchannels, 'little'), wav_file.getnchannels())
-print("nSamplesPerSec", int.from_bytes(nSamplesPerSec, 'little'), wav_file.getframerate())
-print("nAvgBytesPerSec", int.from_bytes(nAvgBytesPerSec, 'little'))
-print("nBlockAlign", int.from_bytes(nBlockAlign, 'little'), int.from_bytes(nchannels, 'little') * int.from_bytes(wBitsPerSample, 'little') // 8)
-print("wBitsPerSample", int.from_bytes(wBitsPerSample, 'little'), wav_file.getsampwidth()*8)
-print("datalabel", datalabel)
-print("nframes", int.from_bytes(nframe, 'little') // int.from_bytes(nchannels, 'little') // (int.from_bytes(wBitsPerSample, 'little') // 8), wav_file.getnframes())
+#play new audio without saving
 play_audio_data = np.frombuffer(audio_data, dtype=np.int16) / 32767
 sd.play(play_audio_data, int.from_bytes(nSamplesPerSec, 'little'))
 
+#write new edited .wav
+with open("myfile-5.wav", "wb") as f:
+    f.write(riff_header+fmtid+fmtcksize+wFormatTag+nchannels+nSamplesPerSec+nAvgBytesPerSec+nBlockAlign+wBitsPerSample+datalabel+datacksize+new_audio_data+rest)
 
+#open and check the new .wav, can comment
+with open('myfile-5.wav', 'rb') as file:
+    ff_header = file.read(12)
+    fmtid = file.read(4)
+    fmtcksize = file.read(4)
+    wFormatTag = file.read(2)
+    nchannels = file.read(2)
+    nSamplesPerSec = file.read(4)
+    nAvgBytesPerSec = file.read(4)
+    nBlockAlign = file.read(2)
+    wBitsPerSample = file.read(2)
+    datalabel = file.read(4)
+    datacksize = file.read(4)
+    nframe = int.from_bytes(datacksize, 'little') // int.from_bytes(nBlockAlign, 'little') * int.from_bytes(nchannels, 'little')
+    audio_data = file.read(int.from_bytes(datacksize, 'little'))
+    rest = file.read()
+
+print("riff_header:", riff_header)
+print("fmtid", fmtid)
+print("fmtcksize", int.from_bytes(fmtcksize, 'little'))
+print("wFormatTag", wFormatTag)
+print("nchannels", int.from_bytes(nchannels, 'little'), wav_file.getnchannels())
+print("nSamplesPerSec", int.from_bytes(nSamplesPerSec, 'little'), wav_file.getframerate())
+print("nAvgBytesPerSec", int.from_bytes(nAvgBytesPerSec, 'little'))
+print("nBlockAlign", int.from_bytes(nBlockAlign, 'little'), int.from_bytes(nchannels, 'little') * int.from_bytes(nBlockAlign, 'little'))
+print("wBitsPerSample", int.from_bytes(wBitsPerSample, 'little'), wav_file.getsampwidth()*8)
+print("datalabel", datalabel)
+print("nframes", nframe, wav_file.getnframes())
