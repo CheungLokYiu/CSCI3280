@@ -100,11 +100,11 @@ def saverecording(name,frames):
 frame1 =  s_record(10) # raw audio file 
 frame2 = s_record(3)
 
-output_file = 'output.wav'
+output_file = 'output'
 sample_rate = 44100
 bits_per_sample = 16
 channels = 1
 saverecording('waverecording1', frame1)
 saverecording('waverecording2', frame2)
 convert_audio_to_wav(hex_to_dec(frame1),frame1, output_file) # raw audio file save to wav file  
-convert_audio_to_wav(hex_to_dec(frame2),frame2, "output_2.wav")
+convert_audio_to_wav(hex_to_dec(frame2),frame2, "output_2")
