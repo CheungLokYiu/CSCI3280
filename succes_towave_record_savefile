@@ -1,6 +1,5 @@
 import pyaudio
 import struct
-import numpy as np
 import wave
 import os
 
@@ -9,7 +8,9 @@ CHUNK = 1024
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
+BITPERSAMPLE =16
 
+#start recording 
 def s_record(seconds):
     
     stream = p.open(format = FORMAT, channels = CHANNELS, rate = RATE, input = True, input_device_index = 0, frames_per_buffer = CHUNK)
@@ -28,50 +29,23 @@ def s_record(seconds):
     return frames
 
 def hex_to_dec(frames):
-    
     bframe = b''.join(frames)
     raw_data = [s for s in bframe]
     #print (raw_data)
     return raw_data
 
-def saverecording(name,frames):
-    #print("this is" + COUNT)
-    #COUNT = COUNT +1
-    wf = wave.open(os.path.join('recording', name + ".wav"), "wb") # open a folder first to store all recording
-    wf.setnchannels(CHANNELS)
-    wf.setsampwidth(p.get_sample_size(FORMAT))
-    wf.setframerate(RATE)
-    wf.writeframes(b''.join(frames))
-    wf.close()
-    print(wf)
+# raw audio file save to wav file  
+def convert_audio_to_wav(audio_data, frame, output_file):
 
-#print(audio_data)
-# Output: [254, 139, 254, 140, 254, 138, 254, 139]
-# Example audio data as a string of bytes in hexadecimal format
-#audio_data_hex = b'\xfe\x8b\xfe\x8c\xfe\x8a\xfe\x8b'
-
-# Convert the hexadecimal data to a list of integers
-#audio_data = [s for s in struct.unpack(f'{len(audio_data_hex)}B', audio_data_hex)]
-
-#print(audio_data)
-# Output: [254, 139, 254, 140, 254, 138, 254, 139]
-
-def convert_audio_to_wav(audio_data, frame, output_file, sample_rate, bits_per_sample, channels):
-    # Convert the audio data to 16-bit PCM using numpy
-    # audio_data = np.array(audio_data, dtype=np.int8)
-    #audio_data = np.array(audio_data).astype(np.int8)
-    #audio_data = np.divide(audio_data, 2**7)
-    #audio_data = np.int16(audio_data * 2**(bits_per_sample - 8))
-    
     # Convert the audio data to little-endian format
     print('audio_data', audio_data[60:100])
     #audio_data = audio_data.astype('<i2')
 
     # Calculate the number of audio frames
-    num_frames = len(audio_data) // (bits_per_sample // 8)
+    num_frames = len(audio_data) // (BITPERSAMPLE // 8)
 
     # Calculate the size of the audio data
-    audio_data_size = num_frames * (bits_per_sample // 8)
+    audio_data_size = num_frames * (BITPERSAMPLE // 8)
 
     # Calculate the size of the WAV file header
     header_size = 36
@@ -87,18 +61,17 @@ def convert_audio_to_wav(audio_data, frame, output_file, sample_rate, bits_per_s
     # Pack the WAV file header data
     #header_1 = struct.pack('<4sI4sI4sIHII')
     header_1 = b'RIFF'
-
     header_2 = struct.pack('<i', file_size)
     header_3 = b'WAVE'+ b'fmt '              
     header_4 = struct.pack ('<i',16)
     header_5 = b'\x01\x00'
-    header_6 = struct.pack('<h', channels) 
+    header_6 = struct.pack('<h', CHANNELS) 
     header_7 = struct.pack('<2i', 
-                         sample_rate, 
-                         sample_rate * channels * (bits_per_sample // 8))
+                         RATE, 
+                         RATE * CHANNELS * (BITPERSAMPLE // 8))
     header_8 = struct.pack ('<2h',
-                         (bits_per_sample // 8) * channels, 
-                         bits_per_sample)
+                         (BITPERSAMPLE // 8) * CHANNELS, 
+                         BITPERSAMPLE)
     header_9 = b'data'
     header_10 = struct.pack('<i', audio_data_size)
 
@@ -111,8 +84,20 @@ def convert_audio_to_wav(audio_data, frame, output_file, sample_rate, bits_per_s
         for _ in frame:
             f.write(_)
 
+#use import wav for testing only 
+def saverecording(name,frames):
+    #print("this is" + COUNT)
+    #COUNT = COUNT +1
+    wf = wave.open(os.path.join('recording', name + ".wav"), "wb") # open a folder first to store all recording
+    wf.setnchannels(CHANNELS)
+    wf.setsampwidth(p.get_sample_size(FORMAT))
+    wf.setframerate(RATE)
+    wf.writeframes(b''.join(frames))
+    wf.close()
+    print(wf)
+
 # Example usage
-frame1 =  s_record(10)
+frame1 =  s_record(10) # raw audio file 
 frame2 = s_record(3)
 
 output_file = 'output.wav'
@@ -121,5 +106,5 @@ bits_per_sample = 16
 channels = 1
 saverecording('waverecording1', frame1)
 saverecording('waverecording2', frame2)
-convert_audio_to_wav(hex_to_dec(frame1),frame1, output_file, sample_rate, bits_per_sample, channels)
-convert_audio_to_wav(hex_to_dec(frame2),frame2, "output_2.wav", sample_rate, bits_per_sample, channels)
+convert_audio_to_wav(hex_to_dec(frame1),frame1, output_file) # raw audio file save to wav file  
+convert_audio_to_wav(hex_to_dec(frame2),frame2, "output_2.wav")
