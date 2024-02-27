@@ -1,3 +1,6 @@
+#windows may need $ sudo apt install pulseaudio -y to use sounddevice
+#wave only for checking, can comment out import wave and all print()
+
 import struct
 import wave
 import numpy as np
@@ -6,7 +9,7 @@ import sounddevice as sd
 #edit property
 start = 0
 end = 17
-speed = 0.5
+speed = 1.5
 
 #read original .wav
 wav_file = wave.open('test.wav','r')
@@ -51,7 +54,9 @@ nSamplesPerSec = struct.pack('<i', framerate) #get nSamplesPerSec(bytes) from fr
 
 #play new audio without saving
 play_audio_data = np.frombuffer(audio_data, dtype=np.int16) / 32767
+print("play edit audio")
 sd.play(play_audio_data, int.from_bytes(nSamplesPerSec, 'little'))
+status = sd.wait()
 
 #write new edited .wav
 with open("myfile-5.wav", "wb") as f:
