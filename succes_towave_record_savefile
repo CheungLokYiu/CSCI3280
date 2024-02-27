@@ -2,6 +2,7 @@ import pyaudio
 import struct
 import wave
 import os
+import playsoud 
 
 p = pyaudio.PyAudio()
 CHUNK = 1024
@@ -96,6 +97,9 @@ def saverecording(name,frames):
     wf.close()
     print(wf)
 
+def play_wavaudio(filename): # ok 
+     playsound.playsound(filename)
+
 # Example usage
 frame1 =  s_record(10) # raw audio file 
 frame2 = s_record(3)
@@ -108,3 +112,4 @@ saverecording('waverecording1', frame1)
 saverecording('waverecording2', frame2)
 convert_audio_to_wav(hex_to_dec(frame1),frame1, output_file) # raw audio file save to wav file  
 convert_audio_to_wav(hex_to_dec(frame2),frame2, "output_2")
+
