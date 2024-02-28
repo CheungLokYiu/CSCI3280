@@ -2,7 +2,6 @@
 #wave only for checking, can comment out import wave and all print()
 
 import struct
-import wave
 import numpy as np
 import sounddevice as sd
 
@@ -80,8 +79,10 @@ def open_and_edit(infilename,start,end,speed):
     #change new property accounding to edit property
     bytesperframe = int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little') #get bytes per frame to set read range
     framerate = int.from_bytes(nSamplesPerSec, 'little') #get current framerate
-    new_audio_data = audio_data[start*bytesperframe*framerate:end*bytesperframe*framerate] #get new_audio_data of editting range
-    nframe = (end-start)*framerate #get new no. of frame
+    new_audio_data = audio_data[int(start*bytesperframe*framerate):int(end*bytesperframe*framerate)] #get new_audio_data of editting range
+    print(int(start*bytesperframe*framerate), '-', int(end*bytesperframe*framerate), len(new_audio_data))
+    nframe = int((end-start)*framerate) #get new no. of frame
+    print('edit nframe', nframe)
     datacksize = nframe * int.from_bytes(nBlockAlign, 'little') #get new datacksize
     datacksize = struct.pack('<i', datacksize) #change dataacksize to bytes
     framerate = int(framerate * speed) #get new framrate from speed
@@ -91,7 +92,7 @@ def open_and_edit(infilename,start,end,speed):
         raw_data += bytes([10])
     file_data = {
                 "raw_data": raw_data,
-                "audio_data": audio_data,
+                "audio_data": new_audio_data,
                 "framerate": framerate
                 }
     return file_data
@@ -110,10 +111,12 @@ def savefile(outfilename, data):
         # if int.from_bytes(datacksize, 'little') % 2 == 1:
         #     f.write(bytes([10]))
 
-def open_and_check(filename):
+def open_and_check(filename,a,b):
     #open and check the new .wav, can comment
     with open(filename, 'rb') as file:
-        riff_header = file.read(12)
+        riff_header = file.read(4)
+        riffcksize = file.read(4)
+        waveid = file.read(4)
         fmtid = file.read(4)
         fmtcksize = file.read(4)
         wFormatTag = file.read(2)
@@ -126,20 +129,26 @@ def open_and_check(filename):
         datacksize = file.read(4)
         nframe = int.from_bytes(datacksize, 'little') // int.from_bytes(nBlockAlign, 'little') * int.from_bytes(nchannels, 'little')
         audio_data = file.read(int.from_bytes(datacksize, 'little'))
-        # rest = file.read()
 
     print("riff_header:", riff_header)
+    print("riffcksize", int.from_bytes(riffcksize, 'little'))
+    print("waveid", waveid)
     print("fmtid", fmtid)
-    print("fmtcksize", int.from_bytes(fmtcksize, 'little'))
-    print("wFormatTag", wFormatTag)
+    print("fmtcksize", int.from_bytes(fmtcksize, 'little'),)
+    print("wFormatTag", wFormatTag, )
     print("nchannels", int.from_bytes(nchannels, 'little'))
     print("nSamplesPerSec", int.from_bytes(nSamplesPerSec, 'little'))
     print("nAvgBytesPerSec", int.from_bytes(nAvgBytesPerSec, 'little'))
     print("nBlockAlign", int.from_bytes(nBlockAlign, 'little'))
     print("wBitsPerSample", int.from_bytes(wBitsPerSample, 'little'))
     print("datalabel", datalabel)
+    print("datacksize", int.from_bytes(datacksize, 'little'))
+    print("nframes", nframe)
+    print("content", audio_data[a:b])
 
 
-data = open_and_edit("output.wav", 2, 8, 2)
+data = open_and_edit("output.wav", 0.1989, 7.45, 0.5)
 streamplay(data)
-savefile("output_edit.wav",data)
+savefile("output_edit_2f.wav",data)
+open_and_check('output_edit_2.wav',4410*2,4410*2+30)
+open_and_check('output_edit_2f.wav',0,30)
