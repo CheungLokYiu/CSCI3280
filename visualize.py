@@ -4,16 +4,18 @@ import wave
 import numpy as np
 import tkinter as tk
 from matplotlib.figure import Figure
+import function
 def plotSignalWave(song_file):
 	# open .wav file
-	sound_wave = wave.open(song_file, 'r')
+	# sound_wave = wave.open(song_file, 'r')
+	sound_wave = function.open_file(song_file)
 	
 	# extract raw audio from .wav file
-	signal = sound_wave.readframes(-1)
+	signal = sound_wave["audio_data"]
 	signal = np.frombuffer(signal, np.int16)
 
 	# frame rate of .wav file
-	frame_rate = sound_wave.getframerate()
+	frame_rate = sound_wave["framerate"]
 
 	# time vector spaced linearly with
 	# the size of the audio file
