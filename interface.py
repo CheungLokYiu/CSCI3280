@@ -2,11 +2,13 @@
 import tkinter
 import customtkinter
 from CTkListbox import *
-import os
+import os, sys
 import time
 import threading
+import function
+import pyaudio
 
-customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
+customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
 
@@ -86,6 +88,7 @@ class App(customtkinter.CTk):
         if self.recording:
             self.recording = False
             self.record_button.configure(text_color = "white")
+            
         else:
             self.recording = True
             self.record_button.configure(text_color = "red")
@@ -93,15 +96,39 @@ class App(customtkinter.CTk):
 
     #implement the record function here
     def record_action(self):
-        start = time.time()
+        p = pyaudio.PyAudio()
+        stream = p.open(format = pyaudio.paInt16, channels = 1, rate = 44100, input = True, input_device_index = 0, frames_per_buffer = 1024)
 
-        #configure timer
+        print("start recording")
+        frames = []
+        start = time.time()
+        
         while self.recording:
+            #configure timer
+            data = stream.read(1024)
+            frames.append(data)
+
             passed = time.time() - start
             sec = passed % 60
             min = passed //60
             hour = min // 60
             self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
+        
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+
+        exist = True
+        i = 1
+        while exist:
+            if os.path.exists(f"Output{i}.wav"):
+                i += 1
+            else:
+                exist = False
+        
+        function.convert_audio_to_wav(frames, f"Output{i}")
+
+
 
     #implement the play function here
     def play_pause(self):
