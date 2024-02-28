@@ -1,9 +1,8 @@
 import pyaudio
 import struct
-import os
 import playsound 
-import numpy as np
 import sounddevice as sd
+import os
 
 p = pyaudio.PyAudio()
 CHUNK = 1024
@@ -13,15 +12,17 @@ RATE = 44100
 BITPERSAMPLE =16
 
 #start recording 
-def s_record(seconds):
+def start_record(seconds):
     
     stream = p.open(format = FORMAT, channels = CHANNELS, rate = RATE, input = True, input_device_index = 0, frames_per_buffer = CHUNK)
 
     print("start recording")
     frames = [] 
+    # add while button true 
     for i in range (0, int(RATE / CHUNK * seconds)):
         data = stream.read(CHUNK)
         frames.append(data)
+    # if button false then close stream 
     stream.stop_stream()
     stream.close()
     print("recording stopped")
@@ -37,8 +38,8 @@ def hex_to_dec(frames):
     return raw_data
 
 # raw audio file save to wav file  
-def convert_audio_to_wav(audio_data, frame, output_file):
-
+def convert_audio_to_wav(frames, output_file):
+    audio_data = hex_to_dec(frames)
     # Convert the audio data to little-endian format
     #audio_data = audio_data.astype('<i2')
 
@@ -80,16 +81,14 @@ def convert_audio_to_wav(audio_data, frame, output_file):
     with open(output_file+".wav", 'wb') as f:
         f.write(header_1 + header_2 + header_3 +header_4+header_5+header_6+header_7+ header_8 + header_9 + header_10)
         # Write the audio data to the output file
-        #f.write(audio_data.tobytes())
-        # print(audio_data.tobytes())
-        for _ in frame:
+        for _ in frames:
             f.write(_)
 
+#play wav audio 
+def play_wavaudio(filename): 
+     playsound.playsound(filename+'.wav')
 
-def play_wavaudio(filename): # ok 
-     playsound.playsound(filename)
-
-def open_and_edit(infilename,start,end,speed):
+def open_and_edit(infilename, start, end, speed):
     #read original .wav
     with open(infilename, 'rb') as file:
         riff_header = file.read(4)
@@ -109,11 +108,11 @@ def open_and_edit(infilename,start,end,speed):
         audio_data = file.read(int.from_bytes(datacksize, 'little'))
 
     print("editing")
-    bytesperframe = int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little') #get bytes per frame to set read range
+    bytesperframe = int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little') #get bytes per frames to set read range
     framerate = int.from_bytes(nSamplesPerSec, 'little') #get current framerate
     new_audio_data = audio_data[(int(start*bytesperframe*framerate)-int(start*bytesperframe*framerate)%2):int(end*bytesperframe*framerate)] #get new_audio_data of editting range
     # print((int(start*bytesperframe*framerate)-int(start*bytesperframe*framerate)%2), '-', int(end*bytesperframe*framerate))
-    nframe = int((end-start)*framerate) #get new no. of frame
+    nframe = int((end-start)*framerate) #get new no. of frames
     datacksize = nframe * int.from_bytes(nBlockAlign, 'little') #get new datacksize
     datacksize = struct.pack('<i', datacksize) #change dataacksize to bytes
     framerate = int(framerate * speed) #get new framrate from speed
@@ -147,22 +146,26 @@ def savefile(outfilename, data):
 
 # Example usage
 output_file = 'output'
-sample_rate = 44100
-bits_per_sample = 16
-channels = 1
+
 start = 4.56
 end = 9.5
 speed = 0.5
 
-frame1 =  s_record(10) # raw audio file 
-convert_audio_to_wav(hex_to_dec(frame1),frame1, output_file) # raw audio file save to wav file  
-data = open_and_edit(output_file+'.wav', start, end, speed)
-streamplay(data)
-start = 0
-end = 6
-data = open_and_edit(output_file+'.wav', start, end, speed)
-streamplay(data)
-savefile('output_edit.wav', data)
+frame1 =  start_record(3) # raw audio file 
+convert_audio_to_wav(frame1, output_file) # raw audio file save to wav file  
+# play_wavaudio(output_file)
+# data = open_and_edit(output_file+'.wav', 7.5, 9.8, 0.5)
+
+# streamplay(data)
+# savefile('output_edit1.wav', data)
+# play_wavaudio('output_edit1')
+
+# start = 0
+# end = 6
+# data = open_and_edit(output_file+'.wav', start, end, 2)
+# streamplay(data)
+# savefile('output_edit2.wav', data)
+# play_wavaudio(output_file)
 
 
 
