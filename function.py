@@ -2,9 +2,10 @@ import pyaudio
 import struct
 import playsound 
 import sounddevice as sd
+import numpy as np
 import os
 
-p = pyaudio.PyAudio()
+
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
@@ -12,8 +13,9 @@ RATE = 44100
 BITPERSAMPLE =16
 
 #start recording 
+"""
 def start_record(seconds):
-    
+    p = pyaudio.PyAudio()
     stream = p.open(format = FORMAT, channels = CHANNELS, rate = RATE, input = True, input_device_index = 0, frames_per_buffer = CHUNK)
 
     print("start recording")
@@ -29,7 +31,7 @@ def start_record(seconds):
     #print(len(frames))
     #print(type(frames))
     #print(type(frames[0]))
-    return frames
+    return frames"""
 
 def hex_to_dec(frames):
     bframe = b''.join(frames)
@@ -151,8 +153,8 @@ start = 4.56
 end = 9.5
 speed = 0.5
 
-frame1 =  start_record(3) # raw audio file 
-convert_audio_to_wav(frame1, output_file) # raw audio file save to wav file  
+#frame1 =  start_record(3) # raw audio file 
+#convert_audio_to_wav(frame1, output_file) # raw audio file save to wav file  
 # play_wavaudio(output_file)
 # data = open_and_edit(output_file+'.wav', 7.5, 9.8, 0.5)
 
