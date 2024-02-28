@@ -40,17 +40,14 @@ def convert_audio_to_wav(frames, output_file):
 
     # Calculate the size of the WAV file header
     header_size = 36
-    header_10 = 0
 
     if (audio_data_size % 2 == 1):
         header_size += 1
-        header_10 = 1 
 
     # Calculate the total size of the WAV file
     file_size = header_size + audio_data_size
 
     # Pack the WAV file header data
-    #header_1 = struct.pack('<4sI4sI4sIHII')
     riff_header = b'RIFF'
     riffcksize = struct.pack('<i', file_size)
     waveid = b'WAVE'
@@ -64,22 +61,24 @@ def convert_audio_to_wav(frames, output_file):
     wBitsPerSample = struct.pack ('<h', BITPERSAMPLE)
     datalabel = b'data'
     datacksize = struct.pack('<i', audio_data_size)
-    nframe = int.from_bytes(datacksize, 'little') // int.from_bytes(nBlockAlign, 'little') * int.from_bytes(nchannels, 'little')
     raw_data = riff_header + riffcksize + waveid +fmtid+fmtcksize+wFormatTag+nchannels+ nSamplesPerSec + nAvgBytesPerSec + nBlockAlign + wBitsPerSample + datalabel + datacksize + audio_data
-    framerate = int.from_bytes(nSamplesPerSec, 'little'),
+
+    nframe = int.from_bytes(datacksize, 'little') // int.from_bytes(nBlockAlign, 'little') * int.from_bytes(nchannels, 'little')
+    framerate = int.from_bytes(nSamplesPerSec, 'little')
+
     # Write the WAV file header to the output file
     with open(output_file+".wav", 'wb') as f:
         f.write(raw_data)
     
-        file_data = {
-                "raw_data": raw_data,
-                "audio_data": audio_data,
-                "framerate": framerate,
-                "bytesperframe": int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little'),
-                "nchannel": int.from_bytes(nchannels, 'little'),
-                "nframe": nframe,
-                "length": nframe / framerate
-                }
+    file_data = {
+            "raw_data": raw_data,
+            "audio_data": audio_data,
+            "framerate": framerate,
+            "bytesperframe": int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little'),
+            "nchannel": int.from_bytes(nchannels, 'little'),
+            "nframe": nframe,
+            "length": nframe / framerate
+            }
     print('return file_data')
     return file_data
     
@@ -125,7 +124,51 @@ def open_file(infilename):
     print('return file_data')
     return file_data
 
-def open_and_edit(infilename, start, end, speed):
+def speed_func(infilename, speed):
+    #read original .wav
+    with open(infilename+'.wav', 'rb') as file:
+        riff_header = file.read(4)
+        riffcksize = file.read(4)
+        waveid = file.read(4)
+        fmtid = file.read(4)
+        fmtcksize = file.read(4)
+        wFormatTag = file.read(2)
+        nchannels = file.read(2)
+        nSamplesPerSec = file.read(4)
+        nAvgBytesPerSec = file.read(4)
+        nBlockAlign = file.read(2)
+        wBitsPerSample = file.read(2)
+        datalabel = file.read(4)
+        datacksize = file.read(4)
+        nframe = int.from_bytes(datacksize, 'little') // int.from_bytes(nBlockAlign, 'little') * int.from_bytes(nchannels, 'little')
+        audio_data = file.read(int.from_bytes(datacksize, 'little'))
+
+    print("editing")
+    bytesperframe = int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little') #get bytes per frames to set read range
+    framerate = int.from_bytes(nSamplesPerSec, 'little') #get current framerate
+    # new_audio_data = audio_data[(int(start*bytesperframe*framerate)-int(start*bytesperframe*framerate)%2):int(end*bytesperframe*framerate)-int(end*bytesperframe*framerate)%2] #get new_audio_data of editting range
+    # nframe = int((end-start)*framerate) #get new no. of frames
+    # datacksize = nframe * int.from_bytes(nBlockAlign, 'little') #get new datacksize
+    # datacksize = struct.pack('<i', datacksize) #change dataacksize to bytes
+    framerate = int(framerate * speed) #get new framrate from speed
+    nSamplesPerSec = struct.pack('<i', framerate) #get nSamplesPerSec(bytes) from framerate(int)
+    print('write data')
+    raw_data = riff_header+riffcksize+waveid+fmtid+fmtcksize+wFormatTag+nchannels+nSamplesPerSec+nAvgBytesPerSec+nBlockAlign+wBitsPerSample+datalabel+datacksize+audio_data
+    if int.from_bytes(datacksize, 'little') % 2 == 1:
+        raw_data += bytes([10])
+    file_data = {
+                "raw_data": raw_data,
+                "audio_data": audio_data,
+                "nchannel": int.from_bytes(nchannels, 'little'),
+                "framerate": framerate,
+                "bytesperframe": bytesperframe,
+                "nframe": nframe,
+                "length": nframe / framerate
+                }
+    print('return file_data')
+    return file_data
+
+def trim(infilename, start, end):
     #read original .wav
     with open(infilename+'.wav', 'rb') as file:
         riff_header = file.read(4)
@@ -151,8 +194,8 @@ def open_and_edit(infilename, start, end, speed):
     nframe = int((end-start)*framerate) #get new no. of frames
     datacksize = nframe * int.from_bytes(nBlockAlign, 'little') #get new datacksize
     datacksize = struct.pack('<i', datacksize) #change dataacksize to bytes
-    framerate = int(framerate * speed) #get new framrate from speed
-    nSamplesPerSec = struct.pack('<i', framerate) #get nSamplesPerSec(bytes) from framerate(int)
+    # framerate = int(framerate * speed) #get new framrate from speed
+    # nSamplesPerSec = struct.pack('<i', framerate) #get nSamplesPerSec(bytes) from framerate(int)
     print('write data')
     raw_data = riff_header+riffcksize+waveid+fmtid+fmtcksize+wFormatTag+nchannels+nSamplesPerSec+nAvgBytesPerSec+nBlockAlign+wBitsPerSample+datalabel+datacksize+new_audio_data
     if int.from_bytes(datacksize, 'little') % 2 == 1:
@@ -226,12 +269,13 @@ speed = 0.5
 # speed = 2
 
 # frame1 =  start_record(10) # raw audio file 
-# streamplay(frame1) # play recording before save as .wav
+# # streamplay(frame1) # play recording before save as .wav
 # data = convert_audio_to_wav(frame1, output_file) # raw audio file save to wav file  
 
-# frame2 = start_record(3.5) #raw audio file 2
-# data2 = replace_audio(output_file, 2, 2+3.5, b''.join(frame2), data) #replace the audio start to end to audio 2
-# streamplay(data2) # play data2 before save
+# frame2 = start_record(4) #raw audio file 2
+# data2 = replace_audio(output_file, 4, 4+4, b''.join(frame2), data) #replace the audio start to end to audio 2
+# # streamplay(data2) # play data2 before save
 # convert_audio_to_wav(data2, final_output_file)  #save data2
 
-# streamplay(open_and_edit(final_output_file, 1.44325, 9.666665, 2)) # edit final_out_file and play
+# streamplay(trim(final_output_file, 0.333, 2.5)) # edit final_out_file and play
+# streamplay(speed_func(final_output_file, 1.443))

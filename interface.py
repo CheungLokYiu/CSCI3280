@@ -142,14 +142,13 @@ class App(customtkinter.CTk):
                 i += 1
             else:
                 exist = False
-        
+        function.streamplay(frames)
         function.convert_audio_to_wav(frames, f"Output{i}")
         self.refresh_list()
 
     def start_playing(self):  
         p = pyaudio.PyAudio()
         chunk = 1024
-        start = time.time()
         print("start_playing")
         self.file_data = function.open_file(self.wav_file_name[0])
         print("bytesperframe", self.file_data["bytesperframe"])
@@ -167,29 +166,14 @@ class App(customtkinter.CTk):
         cur_bytes += chunk*2
         while data != b"" and self.playing:
             if not self.paused:
-                # cur_bytes += chunk*2
                 stream.write(data)
                 data = data = self.file_data["audio_data"][cur_bytes:cur_bytes+chunk*2]
                 cur_bytes += chunk*2
                 self.current_sec = cur_bytes/2/self.file_data["framerate"]
-                passed = time.time() - start
-                sec = passed % 60
-                min = passed //60
-                hour = min // 60
+                hour = self.current_sec // 3600
+                min = (self.current_sec - hour*60) // 60
+                sec = self.current_sec - hour*3600 - min*60
                 self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
-            # chunk_total = 0
-            # while data != b"" and self.playing:
-
-            #     if not self.paused:
-            #         chunk_total += chunk
-            #         stream.write(data)
-            #         data = wf.readframes(chunk)
-            #         self.current_sec = chunk_total/wf.getframerate()
-            #         passed = time.time() - start
-            #         sec = passed % 60
-            #         min = passed //60
-            #         hour = min // 60
-            #         self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
 
 
         self.playing=False
