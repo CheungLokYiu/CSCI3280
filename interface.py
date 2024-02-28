@@ -35,10 +35,11 @@ class App(customtkinter.CTk):
                                   font=(None,30))
         self.listbox.grid(row=0, column=0, rowspan=7, padx=0, pady=0, sticky="nsew")
         self.listbox.grid_rowconfigure(4, weight=1)
-        for wav_file in os.listdir("."):
-            file_name = f"{wav_file:70s}"
-            file_time = time.strftime("\n\n%Y-%m-%d (%H:%M:%S)", time.strptime(time.ctime(os.path.getmtime(wav_file))))
-            self.listbox.insert(wav_file, file_name + file_time)
+        #the loop the files from the direct directory path
+        for file in os.listdir("."):
+            file_name = f"{file:70s}"
+            file_time = time.strftime("\n\n%Y-%m-%d (%H:%M:%S)", time.strptime(time.ctime(os.path.getmtime(file))))
+            self.listbox.insert(file, file_name + file_time)
 
 
         #create control panel
