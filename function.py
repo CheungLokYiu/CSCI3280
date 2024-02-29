@@ -227,7 +227,7 @@ def savefile(outfilename, data):
     with open(outfilename, "wb") as f:
         f.write(data["raw_data"])
 
-def replace_audio(infilename, start, end, replace_data, old_data):
+def replace_audio(start, end, replace_data, old_data):
     framerate = old_data["framerate"]
     bytesperframe = old_data["bytesperframe"]
     old_audio_data = old_data["audio_data"]
