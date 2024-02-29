@@ -114,6 +114,7 @@ class App(customtkinter.CTk):
             
                 file_time = time.strftime("\n\n%Y-%m-%d (%H:%M:%S)", time.strptime(time.ctime(os.path.getmtime(file))))
                 self.listbox.insert(file, file_name + file_time)
+            self.playing = False
 
     #take the data of the .wav file here after you click the left explorer bar
     def show_value(self, selected_option):
@@ -187,7 +188,7 @@ class App(customtkinter.CTk):
         while data != b"" and self.playing:
             if not self.paused:
                 stream.write(data)
-                data = data = self.file_data["audio_data"][cur_bytes:cur_bytes+chunk*2]
+                data = self.file_data["audio_data"][cur_bytes:cur_bytes+chunk*2]
                 cur_bytes += chunk*2
                 self.current_sec = cur_bytes/2/self.file_data["framerate"]
                 #print time label
@@ -222,7 +223,12 @@ class App(customtkinter.CTk):
     #implement the speed control function here
     def change_speed(self, speed_mode: str):
         print(speed_mode)
-        function.streamplay(function.speed_func(self.wav_file_name[0], float(speed_mode[0:3])))
+        data = function.speed_func(self.wav_file_name[0], float(speed_mode[0:3])*function.RATE)
+        function.savefile(self.wav_file_name[0], data)
+        self.refresh_list()
+        self.show_value
+        self.file_data = data
+        
 
 
 if __name__ == "__main__":

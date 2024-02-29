@@ -67,7 +67,7 @@ def convert_audio_to_wav(frames, output_file):
     framerate = int.from_bytes(nSamplesPerSec, 'little')
 
     # Write the WAV file header to the output file
-    with open(output_file+".wav", 'wb') as f:
+    with open(output_file+'wav', 'wb') as f:
         f.write(raw_data)
     
     file_data = {
@@ -124,7 +124,7 @@ def open_file(infilename):
     print('return file_data')
     return file_data
 
-def speed_func(infilename, speed):
+def speed_func(infilename, framerate):
     #read original .wav
     with open(infilename, 'rb') as file:
         riff_header = file.read(4)
@@ -144,13 +144,13 @@ def speed_func(infilename, speed):
         audio_data = file.read(int.from_bytes(datacksize, 'little'))
     print("editing")
     bytesperframe = int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little') #get bytes per frames to set read range
-    framerate = int.from_bytes(nSamplesPerSec, 'little') #get current framerate
+    framerate = int(framerate) #get current framerate
     # new_audio_data = audio_data[(int(start*bytesperframe*framerate)-int(start*byte
     # sperframe*framerate)%2):int(end*bytesperframe*framerate)-int(end*bytesperframe*framerate)%2] #get new_audio_data of editting range
     # nframe = int((end-start)*framerate) #get new no. of frames
     # datacksize = nframe * int.from_bytes(nBlockAlign, 'little') #get new datacksize
     # datacksize = struct.pack('<i', datacksize) #change dataacksize to bytes
-    framerate = int(framerate * speed) #get new framrate from speed
+    # framerate = int(framerate * speed) #get new framrate from speed
     nSamplesPerSec = struct.pack('<i', framerate) #get nSamplesPerSec(bytes) from framerate(int)
     print('write data')
     raw_data = riff_header+riffcksize+waveid+fmtid+fmtcksize+wFormatTag+nchannels+nSamplesPerSec+nAvgBytesPerSec+nBlockAlign+wBitsPerSample+datalabel+datacksize+audio_data
@@ -224,7 +224,7 @@ def streamplay(file_data):
 
 def savefile(outfilename, data):
     #write new edited .wav
-    with open(outfilename+'.wav', "wb") as f:
+    with open(outfilename, "wb") as f:
         f.write(data["raw_data"])
 
 def replace_audio(infilename, start, end, replace_data, old_data):
