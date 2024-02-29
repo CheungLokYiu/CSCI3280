@@ -2,7 +2,7 @@
 import tkinter
 import customtkinter
 from CTkListbox import *
-import os
+import os, sys
 import time
 import threading
 import function
@@ -23,6 +23,7 @@ class App(customtkinter.CTk):
         self.current_sec = 0
         self.after_id = None
         self.audio_timer = 0
+        self.last_file = ''
 
         # configure window
         self.title("Sound Recorder")
@@ -118,8 +119,15 @@ class App(customtkinter.CTk):
 
     #take the data of the .wav file here after you click the left explorer bar
     def show_value(self, selected_option):
+        self.playing = False
+        self.speed_optionemenu.set('1.0x')
+        if self.last_file != '':
+            function.savefile(self.last_file,function.speed_func(self.last_file, float(1)*function.RATE)) 
+        print('last_file', self.last_file)
         self.wav_file_name = selected_option.split()
         print(self.wav_file_name[0])
+        self.last_file = self.wav_file_name[0]
+        self.current_sec = 0
         self.file_data = function.open_file(self.wav_file_name[0])
         length = self.file_data["length"]
         hour = length // 3600
@@ -182,7 +190,9 @@ class App(customtkinter.CTk):
         print("nframe", self.file_data["nframe"])
         print("length", self.file_data["length"])
         stream = p.open(format = p.get_format_from_width(self.file_data["bytesperframe"]), channels = self.file_data["nchannel"], rate = self.file_data["framerate"], output = True)
-        cur_bytes = 0
+        cur_bytes = int(self.current_sec * 2 * function.RATE) - int((self.current_sec * 2 * function.RATE)%2)
+        # (int(start*bytesperframe*framerate)-int(start*bytesperframe*framerate)%2)
+        print(cur_bytes, self.current_sec)
         data = self.file_data["audio_data"][cur_bytes:cur_bytes+chunk*2]
         cur_bytes += chunk*2
         while data != b"" and self.playing:
@@ -190,7 +200,7 @@ class App(customtkinter.CTk):
                 stream.write(data)
                 data = self.file_data["audio_data"][cur_bytes:cur_bytes+chunk*2]
                 cur_bytes += chunk*2
-                self.current_sec = cur_bytes/2/self.file_data["framerate"]
+                self.current_sec = cur_bytes/2/function.RATE
                 #print time label
                 hour = self.current_sec // 3600
                 min = (self.current_sec - hour * 60) // 60
@@ -198,6 +208,9 @@ class App(customtkinter.CTk):
                 self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
 
         self.playing=False
+        if data == b"":
+            self.current_sec = 0
+            self.change_speed('1.0x')
         stream.close()   
         p.terminate()
 
@@ -213,7 +226,7 @@ class App(customtkinter.CTk):
 
         self.paused = False
 
-    #implement the play function here
+    #implement the pause function here
     def pause_audio(self):
         self.paused = True
         
@@ -223,10 +236,11 @@ class App(customtkinter.CTk):
     #implement the speed control function here
     def change_speed(self, speed_mode: str):
         print(speed_mode)
+        self.speed_optionemenu.set(speed_mode)
         data = function.speed_func(self.wav_file_name[0], float(speed_mode[0:3])*function.RATE)
         function.savefile(self.wav_file_name[0], data)
         self.refresh_list()
-        self.show_value
+        # self.show_value()
         self.file_data = data
         
 
