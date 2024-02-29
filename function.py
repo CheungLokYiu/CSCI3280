@@ -67,7 +67,7 @@ def convert_audio_to_wav(frames, output_file):
     framerate = int.from_bytes(nSamplesPerSec, 'little')
 
     # Write the WAV file header to the output file
-    with open(output_file+'wav', 'wb') as f:
+    with open(output_file+'.wav', 'wb') as f:
         f.write(raw_data)
     
     file_data = {
