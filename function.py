@@ -126,7 +126,7 @@ def open_file(infilename):
 
 def speed_func(infilename, speed):
     #read original .wav
-    with open(infilename+'.wav', 'rb') as file:
+    with open(infilename, 'rb') as file:
         riff_header = file.read(4)
         riffcksize = file.read(4)
         waveid = file.read(4)
@@ -142,11 +142,11 @@ def speed_func(infilename, speed):
         datacksize = file.read(4)
         nframe = int.from_bytes(datacksize, 'little') // int.from_bytes(nBlockAlign, 'little') * int.from_bytes(nchannels, 'little')
         audio_data = file.read(int.from_bytes(datacksize, 'little'))
-
     print("editing")
     bytesperframe = int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little') #get bytes per frames to set read range
     framerate = int.from_bytes(nSamplesPerSec, 'little') #get current framerate
-    # new_audio_data = audio_data[(int(start*bytesperframe*framerate)-int(start*bytesperframe*framerate)%2):int(end*bytesperframe*framerate)-int(end*bytesperframe*framerate)%2] #get new_audio_data of editting range
+    # new_audio_data = audio_data[(int(start*bytesperframe*framerate)-int(start*byte
+    # sperframe*framerate)%2):int(end*bytesperframe*framerate)-int(end*bytesperframe*framerate)%2] #get new_audio_data of editting range
     # nframe = int((end-start)*framerate) #get new no. of frames
     # datacksize = nframe * int.from_bytes(nBlockAlign, 'little') #get new datacksize
     # datacksize = struct.pack('<i', datacksize) #change dataacksize to bytes
@@ -170,7 +170,7 @@ def speed_func(infilename, speed):
 
 def trim(infilename, start, end):
     #read original .wav
-    with open(infilename+'.wav', 'rb') as file:
+    with open(infilename, 'rb') as file:
         riff_header = file.read(4)
         riffcksize = file.read(4)
         waveid = file.read(4)
