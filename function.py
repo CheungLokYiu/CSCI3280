@@ -65,7 +65,7 @@ def convert_audio_to_wav(frames, output_file):
 
     nframe = int.from_bytes(datacksize, 'little') // int.from_bytes(nBlockAlign, 'little') * int.from_bytes(nchannels, 'little')
     framerate = int.from_bytes(nSamplesPerSec, 'little')
-
+    
     # Write the WAV file header to the output file
     with open(output_file+'.wav', 'wb') as f:
         f.write(raw_data)
@@ -81,7 +81,6 @@ def convert_audio_to_wav(frames, output_file):
             }
     print('return file_data')
     return file_data
-    
 
 #play wav audio 
 # def play_wavaudio(filename): 
@@ -259,8 +258,8 @@ speed = 0.5
 
 
 # # Example usage
-# output_file = 'output'
-# final_output_file = 'final_output'
+output_file = 'output'
+final_output_file = 'final_output'
 # replace_output_file = 'replace_output'
 
 
@@ -268,13 +267,13 @@ speed = 0.5
 # end = 9.54
 # speed = 2
 
-# frame1 =  start_record(10) # raw audio file 
+# frame1 =  start_record(6) # raw audio file 
 # # streamplay(frame1) # play recording before save as .wav
 # data = convert_audio_to_wav(frame1, output_file) # raw audio file save to wav file  
 
-# frame2 = start_record(4) #raw audio file 2
-# data2 = replace_audio(output_file, 4, 4+4, b''.join(frame2), data) #replace the audio start to end to audio 2
-# # streamplay(data2) # play data2 before save
+# frame2 = start_record(4.32) #raw audio file 2
+# data2 = replace_audio(0.55, 0.55+4.32, b''.join(frame2), data) #replace the audio start to end to audio 2
+# streamplay(data2) # play data2 before save
 # convert_audio_to_wav(data2, final_output_file)  #save data2
 
 # streamplay(trim(final_output_file, 0.333, 2.5)) # edit final_out_file and play

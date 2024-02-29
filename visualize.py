@@ -1,11 +1,10 @@
 
 import matplotlib.pyplot as plt
-import wave
 import numpy as np
 import tkinter as tk
 from matplotlib.figure import Figure
 import function
-def plotSignalWave(song_file):
+def plotSignalWave(song_file, output_file):
 	# open .wav file
 	# sound_wave = wave.open(song_file, 'r')
 	sound_wave = function.open_file(song_file)
@@ -25,7 +24,10 @@ def plotSignalWave(song_file):
 	# plt.title("Signal Wave")
 	plt.axis('off')
 	plt.plot(Time, signal)
-	plt.savefig('out.png', bbox_inches='tight',transparent=True, pad_inches=0)
+	plt.savefig(output_file, bbox_inches='tight',transparent=True, pad_inches=0)
 
 	return ''
-plotSignalWave('test.wav')
+
+output_file = 'out2.png'
+input_file = 'Output2.wav'
+plotSignalWave(input_file, output_file)
