@@ -7,6 +7,7 @@ import time
 import threading
 import function
 import pyaudio
+from PIL import Image
 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -24,6 +25,12 @@ class App(customtkinter.CTk):
         self.after_id = None
         self.audio_timer = 0
         self.last_file = ''
+        self.selected_file_index = 0
+        self.edited_frame = []
+        self.edit_start_time = 0
+        self.edit_end_time = 0
+        self.edit_total_second = 0
+        self.get_list_detail = True
 
         # configure window
         self.title("Sound Recorder")
@@ -50,10 +57,10 @@ class App(customtkinter.CTk):
         self.refresh_list()
 
         #creaet main view
-        self.main_view = customtkinter.CTkFrame(self, fg_color="red")
+        self.main_view = customtkinter.CTkFrame(self, fg_color="transparent")
         self.main_view.grid(row=0, column=1, padx=0, pady=0, sticky="nsew")
         self.main_view.grid_columnconfigure(0, weight=1)
-        self.main_view.grid_rowconfigure(1, weight=1)
+        self.main_view.grid_rowconfigure(2, weight=1)
         #create edit button
         self.edit_button = customtkinter.CTkButton(self.main_view, 
                                                      width=100, 
@@ -68,10 +75,18 @@ class App(customtkinter.CTk):
                                                      font=("Arial", 30, "bold"), 
                                                      command=self.open_trim_dialog)
         self.trim_button.grid(row=0, column=3, padx=10, pady=(5, 5), sticky="nsew")
-        #
-        self.textbox = customtkinter.CTkTextbox(self.main_view)
-        self.textbox.grid(row=1, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
-        
+        #create file name label
+        self.file_name_label = customtkinter.CTkLabel(self.main_view,
+                                            text="XXXX")
+        self.file_name_label.grid(row=1, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
+        #create image view
+        self.audio_image = customtkinter.CTkImage(dark_image=Image.open("out.png"), size=(450, 450))
+        self.image_button = customtkinter.CTkButton(self.main_view, image=self.audio_image, fg_color="white", hover_color="white", text="")
+        self.image_button.grid(row=2, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
+        #create text of audio label
+        self.audio_name_label = customtkinter.CTkLabel(self.main_view,
+                                            text="Diu")
+        self.audio_name_label.grid(row=3, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
 
         #create control panel
         self.control_panel_bar = customtkinter.CTkFrame(self)
@@ -126,31 +141,33 @@ class App(customtkinter.CTk):
 
     #take the data of the .wav file here after you click the left explorer bar
     def show_value(self, selected_option):
-        self.playing = False
-        self.speed_optionemenu.set('1.0x')
-        if self.last_file != '':
-            function.savefile(self.last_file,function.speed_func(self.last_file, float(1)*function.RATE)) 
-        print('last_file', self.last_file)
-        self.wav_file_name = selected_option.split()
-        print(self.wav_file_name[0])
-        self.last_file = self.wav_file_name[0]
-        self.current_sec = 0
-        self.file_data = function.open_file(self.wav_file_name[0])
-        length = self.file_data["length"]
-        hour = length // 3600
-        min = (length - hour * 60) // 60
-        sec = length - hour * 3600 - min * 60
-        self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
+        if self.get_list_detail:
+            self.playing = False
+            self.speed_optionemenu.set('1.0x')
+            self.selected_file_index = self.listbox.curselection()
+            if self.last_file != '':
+                function.savefile(self.last_file,function.speed_func(self.last_file, float(1)*function.RATE)) 
+            print('last_file', self.last_file)
+            self.wav_file_name = selected_option.split()
+            print(self.wav_file_name[0])
+            self.last_file = self.wav_file_name[0]
+            self.current_sec = 0
+            self.file_data = function.open_file(self.wav_file_name[0])
+            length = self.file_data["length"]
+            hour = length // 3600
+            min = (length - hour * 60) // 60
+            sec = length - hour * 3600 - min * 60
+            self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
 
     def record_click_listener(self):
         if self.recording:
             self.recording = False
             self.record_button.configure(text_color = "white")
-            
         else:
             self.recording = True
             self.record_button.configure(text_color = "red")
             threading.Thread(target=self.record_action).start()
+
 
     #implement the record function
     def record_action(self):
@@ -220,8 +237,6 @@ class App(customtkinter.CTk):
         stream.close()   
         p.terminate()
 
-    
-
     #implement the play function here
     def play_audio(self):
         if not self.playing:
@@ -248,48 +263,70 @@ class App(customtkinter.CTk):
         data = function.speed_func(self.wav_file_name[0], float(speed_mode[0:3])*function.RATE)
         function.savefile(self.wav_file_name[0], data)
         self.refresh_list()
-        # self.show_value()
+
+        self.get_list_detail = False
+        self.listbox.activate(self.selected_file_index)
+        self.get_list_detail = True
+
+        #self.show_value()
         self.file_data = data
 
     def open_trim_dialog(self):
         self.change_speed('1.0x')
+        self.listbox.activate(self.selected_file_index)
         trim_dialog = customtkinter.CTkInputDialog(text="Type in the start time and end time to trim the audio\ne.g. 00:00:00.00 - 00:00:00.00", title="Trim Audio")
         input_value = trim_dialog.get_input()
-        split_input = input_value.replace(':', ' ').replace('-', ' ').replace('.', ' ').split()
-        start_time = float(split_input[0]) * 3600 + float(split_input[1]) * 60 + float(split_input[2]) + float(split_input[3]) / 100
-        end_time = float(split_input[4]) * 3600 + float(split_input[5]) * 60 + float(split_input[6]) + float(split_input[7]) / 100
+        split_input = input_value.replace(':', ' ').replace('-', ' ').split()
+        start_time = float(split_input[0]) * 3600 + float(split_input[1]) * 60 + float(split_input[2])
+        end_time = float(split_input[3]) * 3600 + float(split_input[4]) * 60 + float(split_input[5])
         data = function.trim(self.wav_file_name[0], start_time, end_time)
         function.streamplay(data)
         function.savefile(self.wav_file_name[0], data)
         self.refresh_list()
         print(start_time, end_time)
 
-    def record_clicker_change(self):
-        if self.recording:
-            self.recording = False
-            self.record_button.configure(text_color = "white")
-            
-        else:
-            self.recording = True
-            self.record_button.configure(text_color = "red")
-            threading.Thread(target=self.record_action).start() 
-
     def open_edit_dialog(self):
         self.change_speed('1.0x')
+        self.listbox.activate(self.selected_file_index)
         edit_dialog = customtkinter.CTkInputDialog(text="Type in the time of audio to edit with\ne.g. 00:00:00.00 - 00:00:00.00", title="Edit Audio")
         input_value = edit_dialog.get_input()
-        split_input = input_value.replace(':', ' ').replace('-', ' ').replace('.', ' ').split()
-        start_time = float(split_input[0]) * 3600 + float(split_input[1]) * 60 + float(split_input[2]) + float(split_input[3]) / 100
-        end_time = float(split_input[4]) * 3600 + float(split_input[5]) * 60 + float(split_input[6]) + float(split_input[7]) / 100
+        split_input = input_value.replace(':', ' ').replace('-', ' ').split()
+        self.edit_start_time = float(split_input[0]) * 3600 + float(split_input[1]) * 60 + float(split_input[2])
+        self.edit_end_time = float(split_input[3]) * 3600 + float(split_input[4]) * 60 + float(split_input[5])
+        self.edit_total_second = self.edit_end_time - self.edit_start_time
         
-        new_data = function.start_record(end_time - start_time)
-        replace_data = function.replace_audio(start_time, end_time, b''.join(new_data), self.file_data)
+        self.record_button.configure(text_color = "red")
+
+        threading.Thread(target=self.edit_record).start()
+
+    #start edit recording 
+    def edit_record(self):
+        p = pyaudio.PyAudio()
+        stream = p.open(format = pyaudio.paInt16, channels = 1, rate = 44100, input = True, input_device_index = 0, frames_per_buffer = 1024)
+
+        start = time.time()
+        frames = [] 
+        for i in range (0, int(44100 / 1024 * self.edit_total_second)):
+            data = stream.read(1024)
+            frames.append(data)
+
+            passed = time.time() - start
+            sec = passed % 60
+            min = passed //60
+            hour = min // 60
+            self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+        
+        #replace the old audio with the fresh record
+        replace_data = function.replace_audio(self.edit_start_time, self.edit_end_time, b''.join(frames), self.file_data)
         print(self.wav_file_name[0], type(self.wav_file_name[0]))
         filename = self.wav_file_name[0].replace('.wav', '')
         function.convert_audio_to_wav(replace_data, filename)
         self.refresh_list()
-
-        print(start_time, end_time)
+        self.record_button.configure(text_color = "white")
+        return
         
 
 
