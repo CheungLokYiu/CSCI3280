@@ -54,13 +54,20 @@ class App(customtkinter.CTk):
         self.main_view.grid(row=0, column=1, padx=0, pady=0, sticky="nsew")
         self.main_view.grid_columnconfigure(0, weight=1)
         self.main_view.grid_rowconfigure(1, weight=1)
-        #
+        #create edit button
         self.edit_button = customtkinter.CTkButton(self.main_view, 
                                                      width=100, 
                                                      text="EDIT", 
                                                      font=("Arial", 30, "bold"), 
-                                                     command=self.play_audio)
-        self.edit_button.grid(row=0, column=3, padx=10, pady=(5, 5), sticky="nsew")
+                                                     command=self.open_edit_dialog)
+        self.edit_button.grid(row=0, column=1, padx=10, pady=(5, 5), sticky="nsew")
+        #create trim audio button
+        self.trim_button = customtkinter.CTkButton(self.main_view, 
+                                                     width=100, 
+                                                     text="TRIM", 
+                                                     font=("Arial", 30, "bold"), 
+                                                     command=self.open_trim_dialog)
+        self.trim_button.grid(row=0, column=3, padx=10, pady=(5, 5), sticky="nsew")
         #
         self.textbox = customtkinter.CTkTextbox(self.main_view)
         self.textbox.grid(row=1, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
@@ -175,7 +182,6 @@ class App(customtkinter.CTk):
                 i += 1
             else:
                 exist = False
-        function.streamplay(frames)
         function.convert_audio_to_wav(frames, f"Output{i}")
         self.refresh_list()
 
@@ -214,6 +220,8 @@ class App(customtkinter.CTk):
         stream.close()   
         p.terminate()
 
+    
+
     #implement the play function here
     def play_audio(self):
         if not self.playing:
@@ -242,6 +250,46 @@ class App(customtkinter.CTk):
         self.refresh_list()
         # self.show_value()
         self.file_data = data
+
+    def open_trim_dialog(self):
+        self.change_speed('1.0x')
+        trim_dialog = customtkinter.CTkInputDialog(text="Type in the start time and end time to trim the audio\ne.g. 00:00:00.00 - 00:00:00.00", title="Trim Audio")
+        input_value = trim_dialog.get_input()
+        split_input = input_value.replace(':', ' ').replace('-', ' ').replace('.', ' ').split()
+        start_time = float(split_input[0]) * 3600 + float(split_input[1]) * 60 + float(split_input[2]) + float(split_input[3]) / 100
+        end_time = float(split_input[4]) * 3600 + float(split_input[5]) * 60 + float(split_input[6]) + float(split_input[7]) / 100
+        data = function.trim(self.wav_file_name[0], start_time, end_time)
+        function.streamplay(data)
+        function.savefile(self.wav_file_name[0], data)
+        self.refresh_list()
+        print(start_time, end_time)
+
+    def record_clicker_change(self):
+        if self.recording:
+            self.recording = False
+            self.record_button.configure(text_color = "white")
+            
+        else:
+            self.recording = True
+            self.record_button.configure(text_color = "red")
+            threading.Thread(target=self.record_action).start() 
+
+    def open_edit_dialog(self):
+        self.change_speed('1.0x')
+        edit_dialog = customtkinter.CTkInputDialog(text="Type in the time of audio to edit with\ne.g. 00:00:00.00 - 00:00:00.00", title="Edit Audio")
+        input_value = edit_dialog.get_input()
+        split_input = input_value.replace(':', ' ').replace('-', ' ').replace('.', ' ').split()
+        start_time = float(split_input[0]) * 3600 + float(split_input[1]) * 60 + float(split_input[2]) + float(split_input[3]) / 100
+        end_time = float(split_input[4]) * 3600 + float(split_input[5]) * 60 + float(split_input[6]) + float(split_input[7]) / 100
+        
+        new_data = function.start_record(end_time - start_time)
+        replace_data = function.replace_audio(start_time, end_time, b''.join(new_data), self.file_data)
+        print(self.wav_file_name[0], type(self.wav_file_name[0]))
+        filename = self.wav_file_name[0].replace('.wav', '')
+        function.convert_audio_to_wav(replace_data, filename)
+        self.refresh_list()
+
+        print(start_time, end_time)
         
 
 
