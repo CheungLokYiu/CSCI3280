@@ -3,6 +3,7 @@ import struct
 import sounddevice as sd
 import os
 import numpy as np
+import speech_recognition as sr
 
 p = pyaudio.PyAudio()
 CHUNK = 1024
@@ -248,6 +249,16 @@ def replace_audio(start, end, replace_data, old_data):
                 "bytesperframe": bytesperframe
                 }
     return new_audio_data_dict
+
+def wav_to_text(file):
+    r = sr.Recognizer()
+    with sr.AudioFile(file) as source:
+        audio = r.record(source)
+        try:
+            said = r.recognize_google(audio)
+            return said
+        except Exception as e:
+             return ("Exception: " + str(e))
 
 # Example usage
 output_file = 'output'

@@ -8,6 +8,7 @@ import threading
 import function
 import pyaudio
 from PIL import Image
+import visualize
 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -77,16 +78,16 @@ class App(customtkinter.CTk):
         self.trim_button.grid(row=0, column=3, padx=10, pady=(5, 5), sticky="nsew")
         #create file name label
         self.file_name_label = customtkinter.CTkLabel(self.main_view,
-                                            text="XXXX")
+                                            text="")
         self.file_name_label.grid(row=1, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
         #create image view
         self.audio_image = customtkinter.CTkImage(dark_image=Image.open("out.png"), size=(450, 450))
         self.image_button = customtkinter.CTkButton(self.main_view, image=self.audio_image, fg_color="white", hover_color="white", text="")
         self.image_button.grid(row=2, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
         #create text of audio label
-        self.audio_name_label = customtkinter.CTkLabel(self.main_view,
-                                            text="Diu")
-        self.audio_name_label.grid(row=3, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
+        self.audio_text_label = customtkinter.CTkLabel(self.main_view,
+                                            text="")
+        self.audio_text_label.grid(row=3, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
 
         #create control panel
         self.control_panel_bar = customtkinter.CTkFrame(self)
@@ -149,6 +150,9 @@ class App(customtkinter.CTk):
                 function.savefile(self.last_file,function.speed_func(self.last_file, float(1)*function.RATE)) 
             print('last_file', self.last_file)
             self.wav_file_name = selected_option.split()
+
+            self.file_name_label.configure(text=self.wav_file_name[0])
+
             print(self.wav_file_name[0])
             self.last_file = self.wav_file_name[0]
             self.current_sec = 0
@@ -158,6 +162,20 @@ class App(customtkinter.CTk):
             min = (length - hour * 60) // 60
             sec = length - hour * 3600 - min * 60
             self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
+
+            image_name = self.wav_file_name[0].replace(".wav", "")
+            if os.path.exists(image_name + ".png"):
+                self.audio_image.configure(dark_image=Image.open("test.png"))
+                self.image_button.configure(image=self.audio_image)
+            else:
+                visualize.plotSignalWave(self.wav_file_name[0], image_name + ".png")
+                self.audio_image.configure(dark_image=Image.open("test.png"))
+                self.image_button.configure(image=self.audio_image)
+
+            audio_text = function.wav_to_text(self.wav_file_name[0])
+            self.audio_text_label.configure(text=audio_text)
+
+            
 
     def record_click_listener(self):
         if self.recording:
@@ -268,7 +286,6 @@ class App(customtkinter.CTk):
         self.listbox.activate(self.selected_file_index)
         self.get_list_detail = True
 
-        #self.show_value()
         self.file_data = data
 
     def open_trim_dialog(self):
