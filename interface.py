@@ -63,6 +63,15 @@ class App(customtkinter.CTk):
         self.main_view.grid(row=0, column=1, padx=0, pady=0, sticky="nsew")
         self.main_view.grid_columnconfigure(0, weight=1)
         self.main_view.grid_rowconfigure(2, weight=1)
+        #create rename button
+        self.rename_button = customtkinter.CTkButton(self.main_view, 
+                                                     width=100, 
+                                                     text="RENAME", 
+                                                     font=("Arial", 30, "bold"), 
+                                                     fg_color="#7469B6",
+                                                     hover_color="#AD88C6",
+                                                     command=self.open_rename_dialog)
+        self.rename_button.grid(row=0, column=1, padx=10, pady=(5, 5), sticky="nsew")
         #create edit button
         self.edit_button = customtkinter.CTkButton(self.main_view, 
                                                      width=100, 
@@ -71,7 +80,7 @@ class App(customtkinter.CTk):
                                                      fg_color="#7469B6",
                                                      hover_color="#AD88C6",
                                                      command=self.open_edit_dialog)
-        self.edit_button.grid(row=0, column=1, padx=10, pady=(5, 5), sticky="nsew")
+        self.edit_button.grid(row=0, column=2, padx=10, pady=(5, 5), sticky="nsew")
         #create trim audio button
         self.trim_button = customtkinter.CTkButton(self.main_view, 
                                                      width=100, 
@@ -315,6 +324,18 @@ class App(customtkinter.CTk):
         self.get_list_detail = True
 
         self.file_data = data
+
+    def open_rename_dialog(self):
+        self.listbox.activate(self.selected_file_index)
+        trim_dialog = customtkinter.CTkInputDialog(text="Type in a new name to replace current file's name\ne.g. XXXX.wav", title="Rename Audio")
+        input_value = trim_dialog.get_input()
+        os.rename(self.wav_file_name[0], input_value)
+        self.wav_file_name[0] = input_value
+        self.last_file = ""
+        self.listbox.delete(self.selected_file_index)
+        self.refresh_list()
+        self.init_main_view()
+
 
     def open_trim_dialog(self):
         self.change_speed('1.0x')
