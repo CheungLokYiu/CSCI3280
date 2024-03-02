@@ -45,20 +45,21 @@ class App(customtkinter.CTk):
         # create scrollable frame
         self.listbox = CTkListbox(master=self, 
                                   command=self.show_value, 
+                                  width=350,
                                   justify="center", 
-                                  highlight_color="#4382C4",
-                                  fg_color="#90C6FF", 
+                                  highlight_color="#AD88C6",
+                                  hover_color="#AD88C6",
+                                  fg_color="#7469B6", 
                                   label_text="All Recordings", 
-                                  label_fg_color="#90C6FF",
-                                  label_font=(None,30),
-                                  font=(None,30))
+                                  label_fg_color="#7469B6",
+                                  label_font=(None,30))
         self.listbox.grid(row=0, column=0, rowspan=7, padx=0, pady=0, sticky="nsew")
         self.listbox.grid_rowconfigure(4, weight=1)
         #the loop the files from the direct directory path
         self.refresh_list()
 
         #creaet main view
-        self.main_view = customtkinter.CTkFrame(self, fg_color="transparent")
+        self.main_view = customtkinter.CTkFrame(self, fg_color="#F9F5F6")
         self.main_view.grid(row=0, column=1, padx=0, pady=0, sticky="nsew")
         self.main_view.grid_columnconfigure(0, weight=1)
         self.main_view.grid_rowconfigure(2, weight=1)
@@ -67,6 +68,8 @@ class App(customtkinter.CTk):
                                                      width=100, 
                                                      text="EDIT", 
                                                      font=("Arial", 30, "bold"), 
+                                                     fg_color="#7469B6",
+                                                     hover_color="#AD88C6",
                                                      command=self.open_edit_dialog)
         self.edit_button.grid(row=0, column=1, padx=10, pady=(5, 5), sticky="nsew")
         #create trim audio button
@@ -74,30 +77,34 @@ class App(customtkinter.CTk):
                                                      width=100, 
                                                      text="TRIM", 
                                                      font=("Arial", 30, "bold"), 
+                                                     fg_color="#7469B6",
+                                                     hover_color="#AD88C6",
                                                      command=self.open_trim_dialog)
         self.trim_button.grid(row=0, column=3, padx=10, pady=(5, 5), sticky="nsew")
         #create file name label
         self.file_name_label = customtkinter.CTkLabel(self.main_view,
-                                            text="")
+                                            text="", text_color="#7469B6", font=(None, 20, 'bold'))
         self.file_name_label.grid(row=1, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
         #create image view
         self.audio_image = customtkinter.CTkImage(dark_image=Image.open("out.png"), size=(450, 450))
-        self.image_button = customtkinter.CTkButton(self.main_view, image=self.audio_image, fg_color="white", hover_color="white", text="")
+        self.image_button = customtkinter.CTkButton(self.main_view, image=self.audio_image, fg_color="#F9F5F6", hover_color="#F9F5F6", text="")
         self.image_button.grid(row=2, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
         #create text of audio label
         self.audio_text_label = customtkinter.CTkLabel(self.main_view,
-                                            text="")
+                                            text="", text_color="#7469B6", font=(None, 15, 'bold'))
         self.audio_text_label.grid(row=3, column=0, columnspan=4, padx=0, pady=0, sticky="nsew")
 
         #create control panel
-        self.control_panel_bar = customtkinter.CTkFrame(self)
+        self.control_panel_bar = customtkinter.CTkFrame(self, fg_color="#474F7A")
         self.control_panel_bar.grid(row=1, column=1, padx=0, pady=0, sticky="nsew")
         self.control_panel_bar.grid_columnconfigure((0, 2, 5, 7), weight=1)
         #create recording button
         self.record_button = customtkinter.CTkButton(self.control_panel_bar, 
                                                      width=100, 
                                                      text="🎙", 
-                                                     font=("Arial", 30, "bold"), 
+                                                     font=("Arial", 30, "bold"),
+                                                     fg_color="#7469B6",
+                                                     hover_color="#AD88C6", 
                                                      command=self.record_click_listener)
         self.record_button.grid(row=0, column=1, rowspan=2, padx=0, pady=(5, 5), sticky="nsew")
         self.recording = False
@@ -110,22 +117,32 @@ class App(customtkinter.CTk):
                                                      width=100, 
                                                      text="⏵", 
                                                      font=("Arial", 30, "bold"), 
+                                                     fg_color="#7469B6",
+                                                     hover_color="#AD88C6", 
                                                      command=self.play_audio)
         self.play_button.grid(row=0, column=3, rowspan=2, padx=10, pady=(5, 5), sticky="nsew")
         #create pause button
         self.pause_button = customtkinter.CTkButton(self.control_panel_bar, 
                                                      width=100, 
                                                      text="⏸", 
-                                                     font=("Arial", 30, "bold"), 
+                                                     font=("Arial", 30, "bold"),
+                                                     fg_color="#7469B6",
+                                                     hover_color="#AD88C6",  
                                                      command=self.pause_audio)
         self.pause_button.grid(row=0, column=4, rowspan=2, padx=10, pady=(5, 5), sticky="nsew")
         #create speed selection button
         self.speed_label = customtkinter.CTkLabel(self.control_panel_bar, 
-                                                  text="Speed Mode:", 
+                                                  text="Speed Mode:",
+                                                  text_color="white", 
                                                   anchor="w")
         self.speed_label.grid(row=0, column=6, padx=20, pady=0)
         self.speed_optionemenu = customtkinter.CTkOptionMenu(self.control_panel_bar, 
                                                              values=["2.0x", "1.0x", "0.5x"],
+                                                             fg_color="#7469B6",
+                                                             button_color="#7469B6", 
+                                                             button_hover_color="#AD88C6",
+                                                             dropdown_fg_color="#7469B6",
+                                                             dropdown_hover_color="#AD88C6",
                                                              command=self.change_speed)
         self.speed_optionemenu.grid(row=1, column=6, padx=0, pady=(0, 5), sticky="nsew")
         self.speed_optionemenu.set("1.0x")
@@ -153,31 +170,42 @@ class App(customtkinter.CTk):
 
             self.file_name_label.configure(text=self.wav_file_name[0])
 
-            print(self.wav_file_name[0])
+            
             self.last_file = self.wav_file_name[0]
             self.current_sec = 0
-            self.file_data = function.open_file(self.wav_file_name[0])
-            length = self.file_data["length"]
-            hour = length // 3600
-            min = (length - hour * 60) // 60
-            sec = length - hour * 3600 - min * 60
-            self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
+            self.show_audio_length()
 
-            image_name = self.wav_file_name[0].replace(".wav", "")
-            if os.path.exists(image_name + ".png"):
-                self.audio_image.configure(dark_image=Image.open("test.png"))
-                self.image_button.configure(image=self.audio_image)
-            else:
-                visualize.plotSignalWave(self.wav_file_name[0], image_name + ".png")
-                self.audio_image.configure(dark_image=Image.open("test.png"))
-                self.image_button.configure(image=self.audio_image)
+            # image_name = self.wav_file_name[0].replace(".wav", "")
+            self.show_image()
+            self.show_audio_text()
 
-            audio_text = function.wav_to_text(self.wav_file_name[0])
-            self.audio_text_label.configure(text=audio_text)
+    def init_main_view(self):
+        self.audio_text_label.configure(text="")
+        self.timer_label.configure(text="00:00:00")
+        self.file_name_label.configure(text="")
+        self.audio_image.configure(dark_image=Image.open("out.png"))
+        self.image_button.configure(image=self.audio_image)
 
-            
+
+    def show_image(self):
+        visualize.plotSignalWave(self.wav_file_name[0], "photo_image.png")
+        self.audio_image.configure(dark_image=Image.open("photo_image.png"))
+        self.image_button.configure(image=self.audio_image)
+    
+    def show_audio_text(self):
+        audio_text = function.wav_to_text(self.wav_file_name[0])
+        self.audio_text_label.configure(text=audio_text)
+
+    def show_audio_length(self):
+        self.file_data = function.open_file(self.wav_file_name[0])
+        length = self.file_data["length"]
+        hour = length // 3600
+        min = (length - hour * 60) // 60
+        sec = length - hour * 3600 - min * 60
+        self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
 
     def record_click_listener(self):
+        self.init_main_view()
         if self.recording:
             self.recording = False
             self.record_button.configure(text_color = "white")
@@ -297,9 +325,12 @@ class App(customtkinter.CTk):
         start_time = float(split_input[0]) * 3600 + float(split_input[1]) * 60 + float(split_input[2])
         end_time = float(split_input[3]) * 3600 + float(split_input[4]) * 60 + float(split_input[5])
         data = function.trim(self.wav_file_name[0], start_time, end_time)
-        function.streamplay(data)
+        # function.streamplay(data)
         function.savefile(self.wav_file_name[0], data)
         self.refresh_list()
+        self.show_image()
+        self.show_audio_text()
+        self.show_audio_length()
         print(start_time, end_time)
 
     def open_edit_dialog(self):
@@ -343,6 +374,7 @@ class App(customtkinter.CTk):
         function.convert_audio_to_wav(replace_data, filename)
         self.refresh_list()
         self.record_button.configure(text_color = "white")
+        self.init_main_view()
         return
         
 
