@@ -1,7 +1,6 @@
 import pyaudio
 import struct 
 import sounddevice as sd
-import os
 import numpy as np
 import speech_recognition as sr
 
@@ -80,13 +79,9 @@ def convert_audio_to_wav(frames, output_file):
             "nframe": nframe,
             "length": nframe / framerate
             }
-    print('return file_data')
     return file_data
 
-#play wav audio 
-# def play_wavaudio(filename): 
-#      playsound.playsound(filename+'.wav')
-
+#open the audio wav file and the save the data from wav file
 def open_file(infilename):
     #read original .wav
     with open(infilename, 'rb') as file:
@@ -106,7 +101,6 @@ def open_file(infilename):
         nframe = int.from_bytes(datacksize, 'little') // int.from_bytes(nBlockAlign, 'little') * int.from_bytes(nchannels, 'little')
         audio_data = file.read(int.from_bytes(datacksize, 'little'))
 
-    print("editing")
     bytesperframe = int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little') #get bytes per frames to set read range
     framerate = int.from_bytes(nSamplesPerSec, 'little') #get current framerate
     raw_data = riff_header+riffcksize+waveid+fmtid+fmtcksize+wFormatTag+nchannels+nSamplesPerSec+nAvgBytesPerSec+nBlockAlign+wBitsPerSample+datalabel+datacksize+audio_data
@@ -121,7 +115,6 @@ def open_file(infilename):
                 "nframe": nframe,
                 "length": nframe / framerate
                 }
-    print('return file_data')
     return file_data
 
 def speed_func(infilename, framerate):
@@ -142,17 +135,11 @@ def speed_func(infilename, framerate):
         datacksize = file.read(4)
         nframe = int.from_bytes(datacksize, 'little') // int.from_bytes(nBlockAlign, 'little') * int.from_bytes(nchannels, 'little')
         audio_data = file.read(int.from_bytes(datacksize, 'little'))
-    print("editing")
+
     bytesperframe = int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little') #get bytes per frames to set read range
     framerate = int(framerate) #get current framerate
-    # new_audio_data = audio_data[(int(start*bytesperframe*framerate)-int(start*byte
-    # sperframe*framerate)%2):int(end*bytesperframe*framerate)-int(end*bytesperframe*framerate)%2] #get new_audio_data of editting range
-    # nframe = int((end-start)*framerate) #get new no. of frames
-    # datacksize = nframe * int.from_bytes(nBlockAlign, 'little') #get new datacksize
-    # datacksize = struct.pack('<i', datacksize) #change dataacksize to bytes
-    # framerate = int(framerate * speed) #get new framrate from speed
     nSamplesPerSec = struct.pack('<i', framerate) #get nSamplesPerSec(bytes) from framerate(int)
-    print('write data')
+
     raw_data = riff_header+riffcksize+waveid+fmtid+fmtcksize+wFormatTag+nchannels+nSamplesPerSec+nAvgBytesPerSec+nBlockAlign+wBitsPerSample+datalabel+datacksize+audio_data
     if int.from_bytes(datacksize, 'little') % 2 == 1:
         raw_data += bytes([10])
@@ -165,7 +152,6 @@ def speed_func(infilename, framerate):
                 "nframe": nframe,
                 "length": nframe / framerate
                 }
-    print('return file_data')
     return file_data
 
 def trim(infilename, start, end):
@@ -187,16 +173,12 @@ def trim(infilename, start, end):
         nframe = int.from_bytes(datacksize, 'little') // int.from_bytes(nBlockAlign, 'little') * int.from_bytes(nchannels, 'little')
         audio_data = file.read(int.from_bytes(datacksize, 'little'))
 
-    print("editing")
     bytesperframe = int.from_bytes(nBlockAlign, 'little') // int.from_bytes(nchannels, 'little') #get bytes per frames to set read range
     framerate = int.from_bytes(nSamplesPerSec, 'little') #get current framerate
     new_audio_data = audio_data[(int(start*bytesperframe*framerate)-int(start*bytesperframe*framerate)%2):int(end*bytesperframe*framerate)-int(end*bytesperframe*framerate)%2] #get new_audio_data of editting range
     nframe = int((end-start)*framerate) #get new no. of frames
     datacksize = nframe * int.from_bytes(nBlockAlign, 'little') #get new datacksize
     datacksize = struct.pack('<i', datacksize) #change dataacksize to bytes
-    # framerate = int(framerate * speed) #get new framrate from speed
-    # nSamplesPerSec = struct.pack('<i', framerate) #get nSamplesPerSec(bytes) from framerate(int)
-    print('write data')
     raw_data = riff_header+riffcksize+waveid+fmtid+fmtcksize+wFormatTag+nchannels+nSamplesPerSec+nAvgBytesPerSec+nBlockAlign+wBitsPerSample+datalabel+datacksize+new_audio_data
     if int.from_bytes(datacksize, 'little') % 2 == 1:
         raw_data += bytes([10])
@@ -209,24 +191,23 @@ def trim(infilename, start, end):
                 "nframe": nframe,
                 "length": nframe / framerate
                 }
-    print('return file_data')
     return file_data
         
+# play new audio without saving
 def streamplay(file_data):
-    # play new audio without saving
     play_data = file_data["audio_data"] if isinstance(file_data, dict) else b''.join(file_data)
     framerate = file_data["framerate"] if isinstance(file_data, dict) else RATE
-    print('playing...')
     play_audio_data = np.frombuffer(play_data, dtype=np.int16) / 32767
     sd.play(play_audio_data, framerate)
     sd.wait()
-    print('end play')
 
+#save wav file
 def savefile(outfilename, data):
     #write new edited .wav
     with open(outfilename, "wb") as f:
         f.write(data["raw_data"])
 
+#repace the old audio with new audio 
 def replace_audio(start, end, replace_data, old_data):
     framerate = old_data["framerate"]
     bytesperframe = old_data["bytesperframe"]
@@ -250,6 +231,7 @@ def replace_audio(start, end, replace_data, old_data):
                 }
     return new_audio_data_dict
 
+#turn audio to text
 def wav_to_text(file):
     r = sr.Recognizer()
     with sr.AudioFile(file) as source:
@@ -261,25 +243,20 @@ def wav_to_text(file):
              return ("Exception: " + str(e))
 
 # Example usage
-output_file = 'output'
-
-start = 4.56
-end = 9.5
-speed = 0.5
-
-
-# # Example usage
-output_file = 'output'
-final_output_file = 'final_output'
-# replace_output_file = 'replace_output'
-
+# output_file = 'output'
 
 # start = 4.56
-# end = 9.54
-# speed = 2
+# end = 9.5
+# speed = 0.5
+
+
+# Example usage
+# output_file = 'output'
+# final_output_file = 'final_output'
+# replace_output_file = 'replace_output'
 
 # frame1 =  start_record(6) # raw audio file 
-# # streamplay(frame1) # play recording before save as .wav
+# streamplay(frame1) # play recording before save as .wav
 # data = convert_audio_to_wav(frame1, output_file) # raw audio file save to wav file  
 
 # frame2 = start_record(4.32) #raw audio file 2

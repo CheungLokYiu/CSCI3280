@@ -1,8 +1,7 @@
 #!/usr/bin/python3
-import tkinter
 import customtkinter
 from CTkListbox import *
-import os, sys
+import os
 import time
 import threading
 import function
@@ -10,14 +9,15 @@ import pyaudio
 from PIL import Image
 import visualize
 
-customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
-customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
+customtkinter.set_appearance_mode("Dark")
+customtkinter.set_default_color_theme("blue")
 
 
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
 
+        #initialize parameters
         self.wav_file_name = ""
         self.paused = True
         self.playing = False
@@ -37,7 +37,7 @@ class App(customtkinter.CTk):
         self.title("Sound Recorder")
         self.geometry(f"{1100}x{580}")
 
-        # configure grid layout (4x4)
+        # configure grid layout
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=6)
         self.grid_rowconfigure(0, weight=1)
@@ -156,17 +156,18 @@ class App(customtkinter.CTk):
         self.speed_optionemenu.grid(row=1, column=6, padx=0, pady=(0, 5), sticky="nsew")
         self.speed_optionemenu.set("1.0x")
         
+    #refresh the recording explorer
     def refresh_list(self):
         for file in os.listdir("."):
             file_name = f"{file:70s}"
             file_type = os.path.splitext(file)[1]
+            #only show the wav file
             if file_type == ".wav":
-            
                 file_time = time.strftime("\n\n%Y-%m-%d (%H:%M:%S)", time.strptime(time.ctime(os.path.getmtime(file))))
                 self.listbox.insert(file, file_name + file_time)
             self.playing = False
 
-    #take the data of the .wav file here after you click the left explorer bar
+    #take the data of the .wav file here after you click the left explorer
     def show_value(self, selected_option):
         if self.get_list_detail:
             self.playing = False
@@ -174,20 +175,16 @@ class App(customtkinter.CTk):
             self.selected_file_index = self.listbox.curselection()
             if self.last_file != '':
                 function.savefile(self.last_file,function.speed_func(self.last_file, float(1)*function.RATE)) 
-            print('last_file', self.last_file)
             self.wav_file_name = selected_option.split()
-
-            self.file_name_label.configure(text=self.wav_file_name[0])
-
-            
             self.last_file = self.wav_file_name[0]
             self.current_sec = 0
+            #show the selected audio details on right handside
+            self.file_name_label.configure(text=self.wav_file_name[0])
             self.show_audio_length()
-
-            # image_name = self.wav_file_name[0].replace(".wav", "")
             self.show_image()
             self.show_audio_text()
 
+    #initialize the main view
     def init_main_view(self):
         self.audio_text_label.configure(text="")
         self.timer_label.configure(text="00:00:00")
@@ -195,16 +192,18 @@ class App(customtkinter.CTk):
         self.audio_image.configure(dark_image=Image.open("out.png"))
         self.image_button.configure(image=self.audio_image)
 
-
+    #show the visualized audio image
     def show_image(self):
         visualize.plotSignalWave(self.wav_file_name[0], "photo_image.png")
         self.audio_image.configure(dark_image=Image.open("photo_image.png"))
         self.image_button.configure(image=self.audio_image)
     
+    #show the audio text
     def show_audio_text(self):
         audio_text = function.wav_to_text(self.wav_file_name[0])
         self.audio_text_label.configure(text=audio_text)
 
+    #show the audio length on the timer
     def show_audio_length(self):
         self.file_data = function.open_file(self.wav_file_name[0])
         length = self.file_data["length"]
@@ -213,6 +212,7 @@ class App(customtkinter.CTk):
         sec = length - hour * 3600 - min * 60
         self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
 
+    #record button on click listener
     def record_click_listener(self):
         self.init_main_view()
         if self.recording:
@@ -221,6 +221,7 @@ class App(customtkinter.CTk):
         else:
             self.recording = True
             self.record_button.configure(text_color = "red")
+            #create a thread to call record_action() function
             threading.Thread(target=self.record_action).start()
 
 
@@ -228,25 +229,22 @@ class App(customtkinter.CTk):
     def record_action(self):
         p = pyaudio.PyAudio()
         stream = p.open(format = pyaudio.paInt16, channels = 1, rate = 44100, input = True, input_device_index = 0, frames_per_buffer = 1024)
-
         frames = []
         start = time.time()
-        
         while self.recording:
-            #configure timer
+            #append the recording data to list 
             data = stream.read(1024)
             frames.append(data)
-
+            #configure timer
             passed = time.time() - start
             sec = passed % 60
             min = passed //60
             hour = min // 60
             self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
-        
         stream.stop_stream()
         stream.close()
         p.terminate()
-
+        #save the fresh recording file
         exist = True
         i = 1
         while exist:
@@ -257,22 +255,15 @@ class App(customtkinter.CTk):
         function.convert_audio_to_wav(frames, f"Output{i}")
         self.refresh_list()
 
+    #start playing the recording
     def start_playing(self):  
         p = pyaudio.PyAudio()
         chunk = 1024
-
-        # self.file_data = function.open_file(self.wav_file_name[0])
-        print("bytesperframe", self.file_data["bytesperframe"])
-        print("framerate", self.file_data["framerate"])
-        print("nchannel", self.file_data["nchannel"])
-        print("nframe", self.file_data["nframe"])
-        print("length", self.file_data["length"])
         stream = p.open(format = p.get_format_from_width(self.file_data["bytesperframe"]), channels = self.file_data["nchannel"], rate = self.file_data["framerate"], output = True)
         cur_bytes = int(self.current_sec * 2 * function.RATE) - int((self.current_sec * 2 * function.RATE)%2)
-        # (int(start*bytesperframe*framerate)-int(start*bytesperframe*framerate)%2)
-        print(cur_bytes, self.current_sec)
         data = self.file_data["audio_data"][cur_bytes:cur_bytes+chunk*2]
         cur_bytes += chunk*2
+
         while data != b"" and self.playing:
             if not self.paused:
                 stream.write(data)
@@ -286,57 +277,60 @@ class App(customtkinter.CTk):
                 self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
 
         self.playing=False
+
         if data == b"":
             self.current_sec = 0
             self.change_speed('1.0x')
+
         stream.close()   
         p.terminate()
 
-    #implement the play function here
+    #play button on click listener
     def play_audio(self):
         if not self.playing:
-            self.playing = True
-            print(self.wav_file_name[0])
+            self.playing = True  
+            #create thread to call start_playing() function          
             threading.Thread(target=self.start_playing, daemon=True).start()
-        
+
         if self.after_id is None:
             print()
-
         self.paused = False
 
-    #implement the pause function here
+    #pause button on click listener
     def pause_audio(self):
         self.paused = True
         
         if self.after_id:
             self.after_id = None
 
-    #implement the speed control function here
+    #speed control
     def change_speed(self, speed_mode: str):
-        print(speed_mode)
         self.speed_optionemenu.set(speed_mode)
         data = function.speed_func(self.wav_file_name[0], float(speed_mode[0:3])*function.RATE)
         function.savefile(self.wav_file_name[0], data)
         self.refresh_list()
-
+        #sync the explorer
         self.get_list_detail = False
         self.listbox.activate(self.selected_file_index)
         self.get_list_detail = True
 
         self.file_data = data
 
+    #rename button on click listener
     def open_rename_dialog(self):
         self.listbox.activate(self.selected_file_index)
-        trim_dialog = customtkinter.CTkInputDialog(text="Type in a new name to replace current file's name\ne.g. XXXX.wav", title="Rename Audio")
-        input_value = trim_dialog.get_input()
+        rename_dialog = customtkinter.CTkInputDialog(text="Type in a new name to replace current file's name\ne.g. XXXX.wav", title="Rename Audio")
+        input_value = rename_dialog.get_input()
+        #replace the old file name with new inputed name
         os.rename(self.wav_file_name[0], input_value)
+        #synchronize the data
         self.wav_file_name[0] = input_value
         self.last_file = ""
         self.listbox.delete(self.selected_file_index)
         self.refresh_list()
         self.init_main_view()
 
-
+    #trim button on click listener
     def open_trim_dialog(self):
         self.change_speed('1.0x')
         self.listbox.activate(self.selected_file_index)
@@ -352,8 +346,8 @@ class App(customtkinter.CTk):
         self.show_image()
         self.show_audio_text()
         self.show_audio_length()
-        print(start_time, end_time)
-
+        
+    #edit button on click listener
     def open_edit_dialog(self):
         self.change_speed('1.0x')
         self.listbox.activate(self.selected_file_index)
@@ -363,16 +357,14 @@ class App(customtkinter.CTk):
         self.edit_start_time = float(split_input[0]) * 3600 + float(split_input[1]) * 60 + float(split_input[2])
         self.edit_end_time = float(split_input[3]) * 3600 + float(split_input[4]) * 60 + float(split_input[5])
         self.edit_total_second = self.edit_end_time - self.edit_start_time
-        
         self.record_button.configure(text_color = "red")
-
+        #create a thread to call edit_record() function
         threading.Thread(target=self.edit_record).start()
 
     #start edit recording 
     def edit_record(self):
         p = pyaudio.PyAudio()
         stream = p.open(format = pyaudio.paInt16, channels = 1, rate = 44100, input = True, input_device_index = 0, frames_per_buffer = 1024)
-
         start = time.time()
         frames = [] 
         for i in range (0, int(44100 / 1024 * self.edit_total_second)):
@@ -390,7 +382,7 @@ class App(customtkinter.CTk):
         
         #replace the old audio with the fresh record
         replace_data = function.replace_audio(self.edit_start_time, self.edit_end_time, b''.join(frames), self.file_data)
-        print(self.wav_file_name[0], type(self.wav_file_name[0]))
+        
         filename = self.wav_file_name[0].replace('.wav', '')
         function.convert_audio_to_wav(replace_data, filename)
         self.refresh_list()
