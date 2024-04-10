@@ -262,7 +262,7 @@ class App(customtkinter.CTk):
     #implement the record function
     def record_action(self):
         p = pyaudio.PyAudio()
-        stream = p.open(format = pyaudio.paInt16, channels = 1, rate = 44100, input = True, input_device_index = 0, frames_per_buffer = 1024)
+        stream = p.open(format = pyaudio.paInt16, channels = 1, rate = 44100, input = True, frames_per_buffer = 1024)
         frames = []
         start = time.time()
         while self.recording:
@@ -447,8 +447,6 @@ class App(customtkinter.CTk):
         while 1:
             try:
                 create_dialog = customtkinter.CTkInputDialog(text="Enter port number to run on", title="Port Number")
-                if create_dialog.get_input() == None:
-                    break
                 self.port = int(create_dialog.get_input())
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 self.s.settimeout(5)
@@ -578,19 +576,10 @@ class App(customtkinter.CTk):
                 print(err)
                 print("Couldn't connect to server...")
 
-        self.chunk_size = 512
-        self.audio_format = pyaudio.paInt16
-        self.channels = 1
-        self.rate = 20000
-        self.threshold = 10
-        self.short_normalize = (1.0 / 32768.0)
-        self.swidth = 2
-        self.timeout_length = 2
-
         # initialise microphone recording
         self.p = pyaudio.PyAudio()
-        self.playing_stream = self.p.open(format=self.audio_format, channels=self.channels, rate=self.rate, output=True, frames_per_buffer=self.chunk_size)
-        self.recording_stream = self.p.open(format=self.audio_format, channels=self.channels, rate=self.rate, input=True, frames_per_buffer=self.chunk_size)
+        self.playing_stream = self.p.open(format=pyaudio.paInt16, channels=1, rate=44100, output=True)
+        self.recording_stream = self.p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024)
 
         # Termination handler
         def handler(signum, frame):
