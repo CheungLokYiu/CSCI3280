@@ -611,16 +611,19 @@ class App(customtkinter.CTk):
         # start threads
         self.s.settimeout(0.5)
         receive_thread = threading.Thread(target=self.receive_server_data).start()
-        self.send_data_to_server()
+        # self.send_data_to_server()
+        # make a thread to send data to server
+        threading.Thread(target=self.send_data_to_server).start()
+
 
         #replace the old file name with new inputed name
-        os.rename(self.wav_file_name[0], input_value)
-        #synchronize the data
-        self.wav_file_name[0] = input_value
-        self.last_file = ""
-        self.listbox.delete(self.selected_file_index)
-        self.refresh_list()
-        self.init_main_view()
+        # os.rename(self.wav_file_name[0], input_value)
+        # #synchronize the data
+        # self.wav_file_name[0] = input_value
+        # self.last_file = ""
+        # self.listbox.delete(self.selected_file_index)
+        # self.refresh_list()
+        # self.init_main_view()
 
     def receive_server_data(self):
         while self.connected:
