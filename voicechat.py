@@ -8,6 +8,8 @@ import function
 import pyaudio
 import socket
 import signal
+import math
+import struct
 import platform
 from protocol import DataType, Protocol
 from collections import defaultdict
@@ -465,13 +467,13 @@ class App(customtkinter.CTk):
         receive_thread.start()
 
         #replace the old file name with new inputed name
-        os.rename(self.wav_file_name[0], input_value)
+        # os.rename(self.wav_file_name[0], input_value)
         #synchronize the data
-        self.wav_file_name[0] = input_value
-        self.last_file = ""
-        self.listbox.delete(self.selected_file_index)
-        self.refresh_list()
-        self.init_main_view()
+        # self.wav_file_name[0] = input_value
+        # self.last_file = ""
+        # self.listbox.delete(self.selected_file_index)
+        # self.refresh_list()
+        # self.init_main_view()
 
     def receiveData(self):   
         print('Running on IP: ' + self.ip)
@@ -647,13 +649,13 @@ class App(customtkinter.CTk):
         return self.connected
 
     def rms(self, frame):
-        count = len(frame) / self.swidth
+        count = len(frame) / 2
         format = "%dh" % count
         shorts = struct.unpack(format, frame)
 
         sum_squares = 0.0
         for sample in shorts:
-            n = sample * self.short_normalize
+            n = sample * (1.0 / 32768.0)
             sum_squares += n * n
         rms = math.pow(sum_squares / count, 0.5)
 
@@ -661,12 +663,12 @@ class App(customtkinter.CTk):
 
     def record(self):
         current = time.time()
-        end = time.time() + self.timeout_length
+        end = time.time() + 2
 
         while current <= end:
-            data = self.recording_stream.read(self.chunk_size)
-            if self.rms(data) >= self.threshold:
-                end = time.time() + self.timeout_length
+            data = self.recording_stream.read(512)
+            if self.rms(data) >= 10:
+                end = time.time() + 2
                 try:
                     message = Protocol(dataType=DataType.ClientData, room=self.room, data=data)
                     self.s.sendto(message.out(), self.server)
@@ -677,15 +679,16 @@ class App(customtkinter.CTk):
     def listen(self):
         while True:
             try:
-                inp = self.recording_stream.read(self.chunk_size)
+                inp = self.recording_stream.read(512)
                 rms_val = self.rms(inp)
-                if rms_val > self.threshold:
+                if rms_val > 10:
                     self.record()
             except:
                 pass
 
     def send_data_to_server(self):
         while self.connected:
+            print("Listening...")
             self.listen()
    
 if __name__ == "__main__":
