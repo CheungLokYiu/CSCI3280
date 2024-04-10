@@ -421,14 +421,29 @@ class App(customtkinter.CTk):
         self.record_button.configure(text_color = "white")
         self.init_main_view()
         return
+    
+    def get_ip():
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            # doesn't even have to be reachable
+            s.connect(('10.255.255.255', 1))
+            IP = s.getsockname()[0]
+        except:
+            IP = '127.0.0.1'
+        finally:
+            s.close()
+        return IP
         
-         #create button on click listener
+    #create button on click listener
     def create_room_dialog(self):
         self.listbox.activate(self.selected_file_index)
         create_dialog = customtkinter.CTkInputDialog(text="Type in the name of the new chat room \ne.g. Room1", title="Create Room")
         input_value = create_dialog.get_input()
 
-        self.ip = socket.gethostbyname(socket.gethostname())
+        self.ip = App.get_ip()
+
+        print("Running on IP: " + self.ip)
+
 
         while 1:
             try:
@@ -538,12 +553,67 @@ class App(customtkinter.CTk):
         message_list = ["User \"%s\" (%s:%s) has %s voice chat, room %s.\n" % (self.clients[addr], addr[0], addr[1], state, room)]
         return message_list
 
-
     # join button on click listener    
     def join_room_dialog(self):
         self.listbox.activate(self.selected_file_index)
         join_dialog = customtkinter.CTkInputDialog(text="Type in the name of the chat room your wish to join \ne.g. Room1", title="Join Room")
         input_value = join_dialog.get_input()
+
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.connected = False
+        join_dialog = customtkinter.CTkInputDialog(text="Enter your name", title="Client Name")
+        self.name = join_dialog.get_input()
+
+        while 1:
+            try:
+                join_dialog = customtkinter.CTkInputDialog(text="Enter IP address of server", title="Server IP")
+                self.target_ip = join_dialog.get_input()
+                join_dialog = customtkinter.CTkInputDialog(text="Enter target port of server", title="Server Port")
+                self.target_port = int(join_dialog.get_input())
+                join_dialog = customtkinter.CTkInputDialog(text="Enter the id of room", title="Room ID")
+                self.room = int(join_dialog.get_input())
+                self.server = (self.target_ip, self.target_port)
+                self.connect_to_server()
+                break
+            except Exception as err:
+                print(err)
+                print("Couldn't connect to server...")
+
+        self.chunk_size = 512
+        self.audio_format = pyaudio.paInt16
+        self.channels = 1
+        self.rate = 20000
+        self.threshold = 10
+        self.short_normalize = (1.0 / 32768.0)
+        self.swidth = 2
+        self.timeout_length = 2
+
+        # initialise microphone recording
+        self.p = pyaudio.PyAudio()
+        self.playing_stream = self.p.open(format=self.audio_format, channels=self.channels, rate=self.rate, output=True, frames_per_buffer=self.chunk_size)
+        self.recording_stream = self.p.open(format=self.audio_format, channels=self.channels, rate=self.rate, input=True, frames_per_buffer=self.chunk_size)
+
+        # Termination handler
+        def handler(signum, frame):
+            print("\033[2KTerminating...")
+            message = Protocol(dataType=DataType.Terminate, room=self.room, data=self.name.encode(encoding='UTF-8'))
+            self.s.sendto(message.out(), self.server)
+            if platform.system() == "Windows":
+                os.kill(os.getpid(), signal.SIGBREAK)
+            else:
+                os.kill(os.getpid(), signal.SIGKILL)
+
+        if platform.system() == "Windows":
+            signal.signal(signal.SIGBREAK, handler)
+        else:
+            signal.signal(signal.SIGTERM, handler)
+        signal.signal(signal.SIGINT, handler)
+
+        # start threads
+        self.s.settimeout(0.5)
+        receive_thread = threading.Thread(target=self.receive_server_data).start()
+        self.send_data_to_server()
+
         #replace the old file name with new inputed name
         os.rename(self.wav_file_name[0], input_value)
         #synchronize the data
@@ -552,6 +622,80 @@ class App(customtkinter.CTk):
         self.listbox.delete(self.selected_file_index)
         self.refresh_list()
         self.init_main_view()
+
+    def receive_server_data(self):
+        while self.connected:
+            try:
+                data, addr = self.s.recvfrom(1026)
+                message = Protocol(datapacket=data)
+                if message.DataType == DataType.ClientData:
+                    self.playing_stream.write(message.data)
+                    print("User with id %s is talking (room %s)" % (message.head, message.room), end='\r')
+
+                elif message.DataType == DataType.Handshake or message.DataType == DataType.Terminate:
+                    print(message.data.decode("utf-8"))
+            except socket.timeout:
+                print("\033[2K", end="\r")  # clearing line
+            except Exception as err:
+                pass
+
+    def connect_to_server(self):
+        if self.connected:
+            return True
+
+        message = Protocol(dataType=DataType.Handshake, room=self.room, data=self.name.encode(encoding='UTF-8'))
+        self.s.sendto(message.out(), self.server)
+
+        data, addr = self.s.recvfrom(1026)
+        datapack = Protocol(datapacket=data)
+
+        if addr == self.server and datapack.DataType == DataType.Handshake:
+            print('Connected to server to room %s successfully!' % datapack.room)
+            print(datapack.data.decode("utf-8"))
+            self.connected = True
+        return self.connected
+
+    def rms(self, frame):
+        count = len(frame) / self.swidth
+        format = "%dh" % count
+        shorts = struct.unpack(format, frame)
+
+        sum_squares = 0.0
+        for sample in shorts:
+            n = sample * self.short_normalize
+            sum_squares += n * n
+        rms = math.pow(sum_squares / count, 0.5)
+
+        return rms * 1000
+
+    def record(self):
+        current = time.time()
+        end = time.time() + self.timeout_length
+
+        while current <= end:
+            data = self.recording_stream.read(self.chunk_size)
+            if self.rms(data) >= self.threshold:
+                end = time.time() + self.timeout_length
+                try:
+                    message = Protocol(dataType=DataType.ClientData, room=self.room, data=data)
+                    self.s.sendto(message.out(), self.server)
+                except:
+                    pass
+            current = time.time()
+
+    def listen(self):
+        while True:
+            try:
+                inp = self.recording_stream.read(self.chunk_size)
+                rms_val = self.rms(inp)
+                if rms_val > self.threshold:
+                    self.record()
+            except:
+                pass
+
+    def send_data_to_server(self):
+        while self.connected:
+            self.listen()
    
 if __name__ == "__main__":
     app = App()
