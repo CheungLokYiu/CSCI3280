@@ -6,6 +6,9 @@ import time
 import threading
 import function
 import pyaudio
+import socket
+from protocol import DataType, Protocol
+from collections import defaultdict
 from PIL import Image
 import visualize
 
@@ -257,7 +260,7 @@ class App(customtkinter.CTk):
     #implement the record function
     def record_action(self):
         p = pyaudio.PyAudio()
-        stream = p.open(format = pyaudio.paInt16, channels = 1, rate = 44100, input = True, input_device_index = 2, frames_per_buffer = 1024)
+        stream = p.open(format = pyaudio.paInt16, channels = 1, rate = 44100, input = True, input_device_index = 0, frames_per_buffer = 1024)
         frames = []
         start = time.time()
         while self.recording:
@@ -424,6 +427,29 @@ class App(customtkinter.CTk):
         self.listbox.activate(self.selected_file_index)
         create_dialog = customtkinter.CTkInputDialog(text="Type in the name of the new chat room \ne.g. Room1", title="Create Room")
         input_value = create_dialog.get_input()
+
+        self.ip = socket.gethostbyname(socket.gethostname())
+
+        while 1:
+            try:
+                create_dialog = customtkinter.CTkInputDialog(text="Enter port number to run on", title="Port Number")
+                self.port = int(create_dialog.get_input())
+                self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                self.s.settimeout(5)
+                self.s.bind((self.ip, self.port))
+                break
+            except:
+                print("Couldn't bind to that port")
+
+        self.clients = {}
+        self.clientCharId = {}
+        self.rooms = defaultdict(list)
+        self.client_room = {}
+
+        receive_thread = threading.Thread(target=self.receiveData)
+        receive_thread.daemon = True  # Set the thread as a daemon so it terminates when the main thread ends
+        receive_thread.start()
+
         #replace the old file name with new inputed name
         os.rename(self.wav_file_name[0], input_value)
         #synchronize the data
@@ -432,6 +458,86 @@ class App(customtkinter.CTk):
         self.listbox.delete(self.selected_file_index)
         self.refresh_list()
         self.init_main_view()
+
+    def receiveData(self):   
+        print('Running on IP: ' + self.ip)
+        print('Running on port: ' + str(self.port))
+        
+        while True:
+            try:
+                data, addr = self.s.recvfrom(1026)
+                message = Protocol(datapacket=data)
+                self.handleMessage(message, addr)
+            except socket.timeout:
+                pass
+
+    def handleMessage(self, message, addr):
+        if self.clients.get(addr, None) is None:
+            try:
+                if message.DataType != DataType.Handshake:
+                    return
+
+                name = message.data.decode(encoding='UTF-8')
+                room = message.room
+
+                self.clients[addr] = name
+                self.clientCharId[addr] = len(self.clients)
+                self.rooms[room].append(addr)
+                self.client_room[addr] = room
+
+                update_message = self.get_update_message(addr, room, "joined")
+                users_message = self.get_online_users(room)
+                notification = "".join(update_message + users_message)
+                print(notification)
+
+                ret = Protocol(dataType=DataType.Handshake, room=message.room, data="".join(users_message).encode(encoding='UTF-8'))
+                ret_b = Protocol(dataType=DataType.Handshake, room=message.room, data=notification.encode(encoding='UTF-8'))
+                self.s.sendto(ret.out(), addr)
+                self.broadcast(addr, room, ret_b)
+            except Exception as err:
+                print(err)
+            return
+
+        elif message.DataType == DataType.ClientData:
+            self.broadcast(addr, message.room, message)
+
+        elif message.DataType == DataType.Terminate:
+            room = message.room
+            update_message = self.get_update_message(addr, room, "left")
+            self.clients.pop(addr)
+            self.clientCharId.pop(addr)
+            self.rooms[room].remove(addr)
+            self.client_room.pop(addr)
+            users_message = self.get_online_users(room)
+            notification = "".join(update_message + users_message)
+            print(notification)
+            message_ter = Protocol(dataType=DataType.Terminate, room=room, data=notification.encode("utf-8"))
+            self.broadcast(addr, message.room, message_ter)
+
+    def broadcast(self, sentFrom, room, data):
+        if not data.head:
+            data.head = self.clientCharId[sentFrom]
+        for client in self.rooms[room]:
+            if client[0] != sentFrom[0] or client[1] != sentFrom[1]:
+                try:
+                    self.s.sendto(data.out(), client)
+                except Exception as err:
+                    raise err
+
+    def get_online_users(self, room):
+        users = ["Users online in room %s : " % room]
+        if len(self.rooms[room]) == 0:
+            users.append("0")
+        for client in self.rooms[room]:
+            if len(users) > 1:
+                users.append(", ")
+            users.append("\"%s\" (%s:%s)" % (self.clients[client], client[0], client[1]))
+        return users
+
+    def get_update_message(self, addr, room, state):
+        message_list = ["User \"%s\" (%s:%s) has %s voice chat, room %s.\n" % (self.clients[addr], addr[0], addr[1], state, room)]
+        return message_list
+
 
     # join button on click listener    
     def join_room_dialog(self):
