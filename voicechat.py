@@ -7,6 +7,7 @@ import threading
 import function
 import pyaudio
 import socket
+import signal
 import platform
 from protocol import DataType, Protocol
 from collections import defaultdict
@@ -446,6 +447,8 @@ class App(customtkinter.CTk):
         while 1:
             try:
                 create_dialog = customtkinter.CTkInputDialog(text="Enter port number to run on", title="Port Number")
+                if create_dialog.get_input() == None:
+                    break
                 self.port = int(create_dialog.get_input())
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 self.s.settimeout(5)
