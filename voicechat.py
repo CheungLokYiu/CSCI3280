@@ -7,6 +7,7 @@ import threading
 import function
 import pyaudio
 import socket
+import platform
 from protocol import DataType, Protocol
 from collections import defaultdict
 from PIL import Image
@@ -437,13 +438,10 @@ class App(customtkinter.CTk):
     #create button on click listener
     def create_room_dialog(self):
         self.listbox.activate(self.selected_file_index)
-        create_dialog = customtkinter.CTkInputDialog(text="Type in the name of the new chat room \ne.g. Room1", title="Create Room")
-        input_value = create_dialog.get_input()
+        # create_dialog = customtkinter.CTkInputDialog(text="Type in the name of the new chat room \ne.g. Room1", title="Create Room")
+        # input_value = create_dialog.get_input()
 
         self.ip = App.get_ip()
-
-        print("Running on IP: " + self.ip)
-
 
         while 1:
             try:
@@ -556,8 +554,6 @@ class App(customtkinter.CTk):
     # join button on click listener    
     def join_room_dialog(self):
         self.listbox.activate(self.selected_file_index)
-        join_dialog = customtkinter.CTkInputDialog(text="Type in the name of the chat room your wish to join \ne.g. Room1", title="Join Room")
-        input_value = join_dialog.get_input()
 
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.connected = False
