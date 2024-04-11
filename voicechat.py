@@ -6,6 +6,7 @@ import time
 import threading
 import function
 import pyaudio
+import json
 import socket
 import signal
 import math
@@ -496,6 +497,12 @@ class App(customtkinter.CTk):
     def handleMessage(self, message, addr):
         if self.clients.get(addr, None) is None:
             try:
+                if message.DataType == DataType.GetRoom:
+                    key = list(self.rooms.keys())
+                    output = json.dumps({k: len(self.rooms[k]) for k in key})
+                    ret = Protocol(dataType=DataType.GetRoom, room=0, data=output.encode(encoding='UTF-8'))
+                    self.s.sendto(ret.out(), addr)
+                    return
                 if message.DataType != DataType.Handshake:
                     return
 
@@ -517,7 +524,7 @@ class App(customtkinter.CTk):
                 self.s.sendto(ret.out(), addr)
                 self.broadcast(addr, room, ret_b)
             except Exception as err:
-                self.addNotes(err + '\n')
+                print(err)
             return
 
         elif message.DataType == DataType.ClientData:
@@ -575,14 +582,27 @@ class App(customtkinter.CTk):
                 self.target_ip = join_dialog.get_input()
                 join_dialog = customtkinter.CTkInputDialog(text="Enter target port of server", title="Server Port")
                 self.target_port = int(join_dialog.get_input())
-                join_dialog = customtkinter.CTkInputDialog(text="Enter the id of room", title="Room ID")
-                self.room = int(join_dialog.get_input())
+
+
+                # join_dialog = customtkinter.CTkInputDialog(text="Enter the id of room", title="Room ID")
+                # self.room = int(join_dialog.get_input())
+                # list out the available rooms or create a new room
+                # retrieve the list of rooms from the server
+                message = Protocol(dataType=DataType.GetRoom, room=0, data=b'')
+                self.s.sendto(message.out(), (self.target_ip, self.target_port))
+                data, addr = self.s.recvfrom(1026)
+                datapack = Protocol(datapacket=data)
+                data_str = datapack.data
+                data_dict = json.loads(data_str)
+                room_list = list(data_dict.values())
+                room_dialog = customtkinter.CTkInputDialog(text="Enter the id of room (Available rooms: %s)" % room_list, title="Room ID")
+                self.room = int(room_dialog.get_input())
                 self.server = (self.target_ip, self.target_port)
                 self.connect_to_server()
                 break
             except Exception as err:
-                self.addNotes(err)
-                self.addNotes("\nCouldn't connect to server...\n")
+                print(err)
+                self.addNotes("Couldn't connect to server...\n")
 
         # initialise microphone recording
         self.p = pyaudio.PyAudio()

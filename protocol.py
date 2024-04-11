@@ -4,14 +4,16 @@ class DataType(enum.Enum):
     ClientData = 1
     Handshake = 2
     Terminate = 3
+    GetRoom = 4
 
 class Protocol:
     CLIENT_DATA_MIN = 0
     CLIENT_DATA_MAX = 50
     HANDSHAKE = 51
     TERMINATE = 52
+    GET_ROOM = 53
 
-    typeToOrd = {DataType.ClientData: CLIENT_DATA_MIN, DataType.Handshake: HANDSHAKE, DataType.Terminate: TERMINATE}
+    typeToOrd = {DataType.ClientData: CLIENT_DATA_MIN, DataType.Handshake: HANDSHAKE, DataType.Terminate: TERMINATE, DataType.GetRoom: GET_ROOM}
     ordToType = {v: k for k, v in typeToOrd.items()}
 
     def __init__(self, dataType=None, head=None, room=None, data=None, datapacket=None):
