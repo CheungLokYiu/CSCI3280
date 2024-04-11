@@ -293,6 +293,8 @@ class App(customtkinter.CTk):
         frames = self.recordingFrames[0] + self.recordingFrames[1]
 
         function.convert_audio_to_wav(frames, f"Output{i}")
+        # clear the recording frames
+        self.recordingFrames = [[], []]
         self.refresh_list()
 
     #start playing the recording
