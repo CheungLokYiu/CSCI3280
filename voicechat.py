@@ -640,12 +640,22 @@ class App(customtkinter.CTk):
     def terminate_server(self):
         self.s.close()
         self.addNotes("Server terminated.\n")
-        exit()
+        self.init_main_view()
+        self.refresh_list()
+        self.terminate_button.grid_forget()
+        self.create_button.grid_configure(row=0, column=0, padx=(5,5), pady=(10, 5), sticky="nsew")
+        self.join_button.grid_configure(row=0, column=4, padx=(5,5), pady=(10, 5), sticky="nsew")
+        #exit()
 
     def terminate_client(self):
         self.s.close()
         self.addNotes("Client terminated.\n")
-        exit()
+        self.init_main_view()
+        self.refresh_list()
+        self.terminate_button.grid_forget()
+        self.create_button.grid_configure(row=0, column=0, padx=(5,5), pady=(10, 5), sticky="nsew")
+        self.join_button.grid_configure(row=0, column=4, padx=(5,5), pady=(10, 5), sticky="nsew")
+        #exit()
         
     def mute_client(self):
         self.recording_stream.stop_stream()
