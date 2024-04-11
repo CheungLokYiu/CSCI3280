@@ -25,12 +25,14 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
 
+
         # delete all wav files in the directory
         for file in os.listdir("."):
             if file.endswith(".wav"):
                 os.remove(file)
 
         #initialize parameters
+        self.event = threading.Event()
         self.wav_file_name = ""
         self.paused = True
         self.playing = False
@@ -109,11 +111,11 @@ class App(customtkinter.CTk):
         #create rename button
         self.rename_button = customtkinter.CTkButton(self.main_view, 
                                                      width=100, 
-                                                     text="RENAME", 
+                                                     text="TRANSCRIPT", 
                                                      font=("Arial", 30, "bold"), 
                                                      fg_color="#7469B6",
                                                      hover_color="#AD88C6",
-                                                     command=self.open_rename_dialog)
+                                                     command=self.wav_to_text)
         self.rename_button.grid(row=0, column=1, padx=10, pady=(5, 5), sticky="nsew")
         #create edit button
         self.edit_button = customtkinter.CTkButton(self.main_view, 
@@ -242,9 +244,10 @@ class App(customtkinter.CTk):
         self.image_button.configure(image=self.audio_image)
     
     #show the audio text
-    def show_audio_text(self):
-        audio_text = function.wav_to_text(self.wav_file_name[0])
-        self.audio_text_label.configure(text=audio_text)
+    def wav_to_text(self):
+        file = open(self.wav_file_name[0] + ".txt", "w")
+        file.write(function.wav_to_text(self.wav_file_name[0]))
+        file.close()
 
     #show the audio length on the timer
     def show_audio_length(self):
@@ -271,6 +274,8 @@ class App(customtkinter.CTk):
             # message = Protocol(dataType=DataType.StartRec, room=self.room, data=b'')
             #create a thread to call record_action() function
             threading.Thread(target=self.record_action).start()
+
+            
 
 
     #implement the record function
@@ -501,6 +506,8 @@ class App(customtkinter.CTk):
                 data, addr = self.s.recvfrom(1026)
                 message = Protocol(datapacket=data)
                 self.handleMessage(message, addr)
+                if self.event.is_set():
+                    break
             except socket.timeout:
                 pass
 
@@ -539,6 +546,7 @@ class App(customtkinter.CTk):
 
                 ret = Protocol(dataType=DataType.Handshake, room=message.room, data="".join(users_message).encode(encoding='UTF-8'))
                 ret_b = Protocol(dataType=DataType.Handshake, room=message.room, data=notification.encode(encoding='UTF-8'))
+                print("User with id %s is talking (room %s)" % (message.head, message.room) + '\n')
                 self.s.sendto(ret.out(), addr)
                 self.broadcast(addr, room, ret_b)
             except Exception as err:
@@ -619,6 +627,7 @@ class App(customtkinter.CTk):
                 self.room = int(room_dialog.get_input())
                 self.server = (self.target_ip, self.target_port)
                 self.connect_to_server()
+                self.isRecording = False
                 #delete items in the listbox
                 self.listbox.delete(0, 'end')
                 break
@@ -679,15 +688,26 @@ class App(customtkinter.CTk):
         self.terminate_button.grid(row=0, column=2, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
         self.mute_button.grid(row=0, column=4, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
 
-    def terminate_server(self):
-        self.s.close()
-        self.addNotes("Server terminated.\n")
-        exit()
+def terminate_server(self):
+    self.s.close()
+    self.addNotes("Server terminated.\n")
+    # self.event.set()
+    # self.terminate_button.grid_forget()
+    # self.create_button.grid_configure(row=0, column=0, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
+    # self.join_button.grid_configure(row=0, column=4, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
+    exit()
 
-    def terminate_client(self):
-        self.s.close()
-        self.addNotes("Client terminated.\n")
-        exit()
+
+
+def terminate_client(self):
+    self.s.close()
+    self.addNotes("Client terminated.\n")
+    # self.event.set()
+    # self.terminate_button.grid_forget()
+    # self.mute_button.grid_forget()
+    # self.create_button.grid_configure(row=0, column=0, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
+    # self.join_button.grid_configure(row=0, column=4, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
+    exit()
         
     def mute_client(self):
         self.recording_stream.stop_stream()
@@ -704,11 +724,14 @@ class App(customtkinter.CTk):
             try:
                 data, addr = self.s.recvfrom(1026)
                 message = Protocol(datapacket=data)
-                if message.DataType == DataType.ClientData:
+                if self.event.is_set():
+                    break
+                elif message.DataType == DataType.ClientData:
                     if self.recording:
                         self.recordingFrames[1].append(message.data)
                     self.playing_stream.write(message.data)
-                    self.addNotes("User with id %s is talking (room %s)" % (message.head, message.room) + '\n')
+                    # self.addNotes("User with id %s is talking (room %s)" % (message.head, message.room) + '\n')
+                    
                     
 
                 elif message.DataType == DataType.Handshake or message.DataType == DataType.Terminate:
@@ -717,7 +740,8 @@ class App(customtkinter.CTk):
                 print("\033[2K", end="\r")  # clearing line
             except Exception as err:
                 pass
-
+    
+    #reference : https://github.com/jellythefish/voice-chat/tree/main
     def connect_to_server(self):
         if self.connected:
             return True
@@ -748,6 +772,7 @@ class App(customtkinter.CTk):
         return rms * 1000
 
     def record(self):
+        self.isRecording = True
         current = time.time()
         end = time.time() + 2
 
@@ -761,14 +786,19 @@ class App(customtkinter.CTk):
                 except:
                     pass
             current = time.time()
+        self.isRecording = False
+        print(self.isRecording)
 
     def listen(self):
+        current = time.time()
+        end = time.time() + 2
         while True:
             try:
                 inp = self.recording_stream.read(512)
                 rms_val = self.rms(inp)
                 if rms_val > 10:
-                    self.record()
+                    if not self.isRecording:
+                        self.record()
             except:
                 pass
 
