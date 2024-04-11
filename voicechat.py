@@ -260,10 +260,15 @@ class App(customtkinter.CTk):
         self.init_main_view()
         if self.recording:
             self.recording = False
+            # # send stop signal to the server
+            # message = Protocol(dataType=DataType.StopRec, room=self.room, data=b'')
+            # self.s.sendto(message.out(), self.server)
             self.record_button.configure(text_color = "white")
         else:
             self.recording = True
             self.record_button.configure(text_color = "red")
+            # # send start signal to the server
+            # message = Protocol(dataType=DataType.StartRec, room=self.room, data=b'')
             #create a thread to call record_action() function
             threading.Thread(target=self.record_action).start()
 
@@ -510,6 +515,12 @@ class App(customtkinter.CTk):
                     ret = Protocol(dataType=DataType.GetRoom, room=0, data=output.encode(encoding='UTF-8'))
                     self.s.sendto(ret.out(), addr)
                     return
+                
+                
+                # if message.DataType == DataType.StartRec or message.DataType == DataType.StopRec:
+                #     self.record_click_listener();
+                #     return
+
                 if message.DataType != DataType.Handshake:
                     return
 
