@@ -440,22 +440,19 @@ class App(customtkinter.CTk):
         
     #create button on click listener
     def create_room_dialog(self):
-        self.listbox.activate(self.selected_file_index)
-        # create_dialog = customtkinter.CTkInputDialog(text="Type in the name of the new chat room \ne.g. Room1", title="Create Room")
-        # input_value = create_dialog.get_input()
-
+        # self.listbox.activate(self.selected_file_index)
         self.ip = App.get_ip()
 
         while 1:
             try:
-                create_dialog = customtkinter.CTkInputDialog(text="Enter port number to run on", title="Port Number")
+                create_dialog = customtkinter.CTkInputDialog(text="You are currently hosting a server. Enter port number to run on", title="Port Number")
                 self.port = int(create_dialog.get_input())
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 self.s.settimeout(5)
                 self.s.bind((self.ip, self.port))
                 break
             except:
-                print("Couldn't bind to that port")
+                self.addNotes("Couldn't bind to that port.\n")
 
         self.clients = {}
         self.clientCharId = {}
@@ -466,18 +463,27 @@ class App(customtkinter.CTk):
         receive_thread.daemon = True  # Set the thread as a daemon so it terminates when the main thread ends
         receive_thread.start()
 
-        #replace the old file name with new inputed name
-        # os.rename(self.wav_file_name[0], input_value)
-        #synchronize the data
-        # self.wav_file_name[0] = input_value
-        # self.last_file = ""
-        # self.listbox.delete(self.selected_file_index)
-        # self.refresh_list()
-        # self.init_main_view()
+        # Change the whole view to the server view (only text)
+        # remove the create and join button
+        self.create_button.grid_forget()
+        self.join_button.grid_forget()
+        # create the terminate button
+        self.terminate_button = customtkinter.CTkButton(self.room_control_bar,
+                                                        width=100,
+                                                        text="TERMINATE",
+                                                        font=("Arial", 25, "bold"),
+                                                        fg_color="#AD88C6",
+                                                        hover_color="#7469B6",
+                                                        command=self.terminate_server)
+        self.terminate_button.grid(row=0, column=2, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
+
+
+    def addNotes(self, text):
+        self.audio_text_label.configure(text=self.audio_text_label.cget("text") + text)
 
     def receiveData(self):   
-        print('Running on IP: ' + self.ip)
-        print('Running on port: ' + str(self.port))
+        self.addNotes('Running on IP: ' + self.ip + '\n')
+        self.addNotes('Running on port: ' + str(self.port) + '\n')
         
         while True:
             try:
@@ -504,14 +510,14 @@ class App(customtkinter.CTk):
                 update_message = self.get_update_message(addr, room, "joined")
                 users_message = self.get_online_users(room)
                 notification = "".join(update_message + users_message)
-                print(notification)
+                self.addNotes(notification + '\n')
 
                 ret = Protocol(dataType=DataType.Handshake, room=message.room, data="".join(users_message).encode(encoding='UTF-8'))
                 ret_b = Protocol(dataType=DataType.Handshake, room=message.room, data=notification.encode(encoding='UTF-8'))
                 self.s.sendto(ret.out(), addr)
                 self.broadcast(addr, room, ret_b)
             except Exception as err:
-                print(err)
+                self.addNotes(err + '\n')
             return
 
         elif message.DataType == DataType.ClientData:
@@ -526,7 +532,7 @@ class App(customtkinter.CTk):
             self.client_room.pop(addr)
             users_message = self.get_online_users(room)
             notification = "".join(update_message + users_message)
-            print(notification)
+            self.addNotes(notification + '\n')
             message_ter = Protocol(dataType=DataType.Terminate, room=room, data=notification.encode("utf-8"))
             self.broadcast(addr, message.room, message_ter)
 
@@ -556,7 +562,7 @@ class App(customtkinter.CTk):
 
     # join button on click listener    
     def join_room_dialog(self):
-        self.listbox.activate(self.selected_file_index)
+        # self.listbox.activate(self.selected_file_index)
 
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.connected = False
@@ -575,8 +581,8 @@ class App(customtkinter.CTk):
                 self.connect_to_server()
                 break
             except Exception as err:
-                print(err)
-                print("Couldn't connect to server...")
+                self.addNotes(err)
+                self.addNotes("\nCouldn't connect to server...\n")
 
         # initialise microphone recording
         self.p = pyaudio.PyAudio()
@@ -606,15 +612,51 @@ class App(customtkinter.CTk):
         # make a thread to send data to server
         threading.Thread(target=self.send_data_to_server).start()
 
+        # remove the create and join button
+        self.create_button.grid_forget()
+        self.join_button.grid_forget()
 
-        #replace the old file name with new inputed name
-        # os.rename(self.wav_file_name[0], input_value)
-        # #synchronize the data
-        # self.wav_file_name[0] = input_value
-        # self.last_file = ""
-        # self.listbox.delete(self.selected_file_index)
-        # self.refresh_list()
-        # self.init_main_view()
+        # create the terminate button
+        self.terminate_button = customtkinter.CTkButton(self.room_control_bar,
+                                                        width=100,
+                                                        text="TERMINATE",
+                                                        font=("Arial", 25, "bold"),
+                                                        fg_color="#AD88C6",
+                                                        hover_color="#7469B6",
+                                                        command=self.terminate_client)
+        
+        # create mute button
+        self.mute_button = customtkinter.CTkButton(self.room_control_bar,
+                                                        width=100,
+                                                        text="MUTE",
+                                                        font=("Arial", 25, "bold"),
+                                                        fg_color="#AD88C6",
+                                                        hover_color="#7469B6",
+                                                        command=self.mute_client)
+        
+        self.terminate_button.grid(row=0, column=2, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
+        self.mute_button.grid(row=0, column=4, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
+
+    def terminate_server(self):
+        self.s.close()
+        self.addNotes("Server terminated.\n")
+        exit()
+
+    def terminate_client(self):
+        self.s.close()
+        self.addNotes("Client terminated.\n")
+        exit()
+        
+    def mute_client(self):
+        self.recording_stream.stop_stream()
+        self.addNotes("Client muted.\n")
+        self.mute_button.configure(text="UNMUTE", command=self.unmute_client)
+
+    def unmute_client(self):
+        self.recording_stream.start_stream()
+        self.addNotes("Client unmuted.\n")
+        self.mute_button.configure(text="MUTE", command=self.mute_client)
+
 
     def receive_server_data(self):
         while self.connected:
@@ -623,7 +665,8 @@ class App(customtkinter.CTk):
                 message = Protocol(datapacket=data)
                 if message.DataType == DataType.ClientData:
                     self.playing_stream.write(message.data)
-                    print("User with id %s is talking (room %s)" % (message.head, message.room), end='\r')
+                    self.addNotes("User with id %s is talking (room %s)" % (message.head, message.room) + '\n')
+                    
 
                 elif message.DataType == DataType.Handshake or message.DataType == DataType.Terminate:
                     print(message.data.decode("utf-8"))
@@ -643,7 +686,7 @@ class App(customtkinter.CTk):
         datapack = Protocol(datapacket=data)
 
         if addr == self.server and datapack.DataType == DataType.Handshake:
-            print('Connected to server to room %s successfully!' % datapack.room)
+            self.addNotes('Connected to server to room %s successfully!' % datapack.room + '\n')
             print(datapack.data.decode("utf-8"))
             self.connected = True
         return self.connected
@@ -688,7 +731,6 @@ class App(customtkinter.CTk):
 
     def send_data_to_server(self):
         while self.connected:
-            print("Listening...")
             self.listen()
    
 if __name__ == "__main__":
