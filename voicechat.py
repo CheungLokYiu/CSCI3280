@@ -499,7 +499,11 @@ class App(customtkinter.CTk):
             try:
                 if message.DataType == DataType.GetRoom:
                     key = list(self.rooms.keys())
-                    output = json.dumps({k: len(self.rooms[k]) for k in key})
+                    # get room numbers from self.client_room[] = {('10.13.24.76', 52729): 13} (get 13 as room number)
+                    # remark: get all value of the dictionary of self.client_room
+                    room_numbers = list(self.client_room.values())    
+                    # make the list as json format
+                    output = json.dumps(dict(zip(key, room_numbers)))           
                     ret = Protocol(dataType=DataType.GetRoom, room=0, data=output.encode(encoding='UTF-8'))
                     self.s.sendto(ret.out(), addr)
                     return
