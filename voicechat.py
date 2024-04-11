@@ -227,7 +227,7 @@ class App(customtkinter.CTk):
             self.file_name_label.configure(text=self.wav_file_name[0])
             self.show_audio_length()
             self.show_image()
-            self.show_audio_text()
+            self.wav_to_text()
 
     #initialize the main view
     def init_main_view(self):
@@ -389,7 +389,7 @@ class App(customtkinter.CTk):
         function.savefile(self.wav_file_name[0], data)
         self.refresh_list()
         self.show_image()
-        self.show_audio_text()
+        self.wav_to_text()
         self.show_audio_length()
         
     #edit button on click listener
@@ -675,26 +675,26 @@ class App(customtkinter.CTk):
         self.terminate_button.grid(row=0, column=2, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
         self.mute_button.grid(row=0, column=4, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
 
-def terminate_server(self):
-    self.s.close()
-    self.addNotes("Server terminated.\n")
-    # self.event.set()
-    # self.terminate_button.grid_forget()
-    # self.create_button.grid_configure(row=0, column=0, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
-    # self.join_button.grid_configure(row=0, column=4, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
-    exit()
+    def terminate_server(self):
+        self.s.close()
+        self.addNotes("Server terminated.\n")
+        self.event.set()
+        self.terminate_button.grid_forget()
+        self.create_button.grid_configure(row=0, column=0, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
+        self.join_button.grid_configure(row=0, column=4, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
+        exit()
 
 
 
-def terminate_client(self):
-    self.s.close()
-    self.addNotes("Client terminated.\n")
-    # self.event.set()
-    # self.terminate_button.grid_forget()
-    # self.mute_button.grid_forget()
-    # self.create_button.grid_configure(row=0, column=0, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
-    # self.join_button.grid_configure(row=0, column=4, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
-    exit()
+    def terminate_client(self):
+        self.s.close()
+        self.addNotes("Client terminated.\n")
+        self.event.set()
+        self.terminate_button.grid_forget()
+        self.mute_button.grid_forget()
+        self.create_button.grid_configure(row=0, column=0, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
+        self.join_button.grid_configure(row=0, column=4, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
+        exit()
         
     def mute_client(self):
         self.recording_stream.stop_stream()
