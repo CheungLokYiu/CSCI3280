@@ -502,8 +502,6 @@ class App(customtkinter.CTk):
             try:
                 if message.DataType == DataType.GetRoom:
                     key = list(self.rooms.keys())
-                    # get room numbers from self.client_room[] = {('10.13.24.76', 52729): 13} (get 13 as room number)
-                    # remark: get all value of the dictionary of self.client_room
                     room_numbers = list(self.client_room.values())    
                     # make the list as json format
                     output = json.dumps(dict(zip(key, room_numbers)))           
@@ -603,9 +601,13 @@ class App(customtkinter.CTk):
                 data_dict = json.loads(data_str)
                 room_list = list(data_dict.values())
                 room_dialog = customtkinter.CTkInputDialog(text="Enter the id of room (Available rooms: %s)" % room_list, title="Room ID")
+                for i in room_list:
+                    self.listbox.insert(i, f"Room {i}")
                 self.room = int(room_dialog.get_input())
                 self.server = (self.target_ip, self.target_port)
                 self.connect_to_server()
+                #delete items in the listbox
+                self.listbox.delete(0, 'end')
                 break
             except Exception as err:
                 print(err)
