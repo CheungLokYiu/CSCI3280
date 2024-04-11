@@ -25,6 +25,11 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
 
+        # delete all wav files in the directory
+        for file in os.listdir("."):
+            if file.endswith(".wav"):
+                os.remove(file)
+
         #initialize parameters
         self.wav_file_name = ""
         self.paused = True
@@ -40,6 +45,7 @@ class App(customtkinter.CTk):
         self.edit_end_time = 0
         self.edit_total_second = 0
         self.get_list_detail = True
+        self.recordingFrames = [[],[]]
 
         # configure window
         self.title("Peer to Peer Voice Chat")
@@ -264,23 +270,16 @@ class App(customtkinter.CTk):
 
     #implement the record function
     def record_action(self):
-        p = pyaudio.PyAudio()
-        stream = p.open(format = pyaudio.paInt16, channels = 1, rate = 44100, input = True, frames_per_buffer = 1024)
-        frames = []
+        # get data from self.recording_stream and self.playing_stream (combine them)
         start = time.time()
         while self.recording:
-            #append the recording data to list 
-            data = stream.read(1024)
-            frames.append(data)
-            #configure timer
+            self.recordingFrames[0].append(self.recording_stream.read(1024))
+
             passed = time.time() - start
             sec = passed % 60
             min = passed //60
             hour = min // 60
             self.timer_label.configure(text=f"{int(hour):02d}:{int(min):02d}:{int(sec):02d}")
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
         #save the fresh recording file
         exist = True
         i = 1
@@ -289,6 +288,10 @@ class App(customtkinter.CTk):
                 i += 1
             else:
                 exist = False
+
+        # combine the recording and playing frames
+        frames = self.recordingFrames[0] + self.recordingFrames[1]
+
         function.convert_audio_to_wav(frames, f"Output{i}")
         self.refresh_list()
 
@@ -681,13 +684,14 @@ class App(customtkinter.CTk):
         self.addNotes("Client unmuted.\n")
         self.mute_button.configure(text="MUTE", command=self.mute_client)
 
-
     def receive_server_data(self):
         while self.connected:
             try:
                 data, addr = self.s.recvfrom(1026)
                 message = Protocol(datapacket=data)
                 if message.DataType == DataType.ClientData:
+                    if self.recording:
+                        self.recordingFrames[1].append(message.data)
                     self.playing_stream.write(message.data)
                     self.addNotes("User with id %s is talking (room %s)" % (message.head, message.room) + '\n')
                     
