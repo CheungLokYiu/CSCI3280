@@ -227,7 +227,7 @@ class App(customtkinter.CTk):
             self.file_name_label.configure(text=self.wav_file_name[0])
             self.show_audio_length()
             self.show_image()
-            self.wav_to_text()
+            
 
     #initialize the main view
     def init_main_view(self):
@@ -468,9 +468,9 @@ class App(customtkinter.CTk):
         self.rooms = defaultdict(list)
         self.client_room = {}
 
-        receive_thread = threading.Thread(target=self.receiveData)
-        receive_thread.daemon = True  # Set the thread as a daemon so it terminates when the main thread ends
-        receive_thread.start()
+        self.receive_thread = threading.Thread(target=self.receiveData)
+        self.receive_thread.daemon = True  # Set the thread as a daemon so it terminates when the main thread ends
+        self.receive_thread.start()
 
         # Change the whole view to the server view (only text)
         # remove the create and join button
@@ -645,7 +645,7 @@ class App(customtkinter.CTk):
 
         # start threads
         self.s.settimeout(0.5)
-        receive_thread = threading.Thread(target=self.receive_server_data).start()
+        self.receive_thread = threading.Thread(target=self.receive_server_data).start()
         # self.send_data_to_server()
         # make a thread to send data to server
         threading.Thread(target=self.send_data_to_server).start()
@@ -682,7 +682,7 @@ class App(customtkinter.CTk):
         self.terminate_button.grid_forget()
         self.create_button.grid_configure(row=0, column=0, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
         self.join_button.grid_configure(row=0, column=4, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
-        exit()
+        # exit()
 
 
 
@@ -694,7 +694,7 @@ class App(customtkinter.CTk):
         self.mute_button.grid_forget()
         self.create_button.grid_configure(row=0, column=0, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
         self.join_button.grid_configure(row=0, column=4, rowspan=2, padx=(5, 5), pady=(10, 5), sticky="nsew")
-        exit()
+        # exit()
         
     def mute_client(self):
         self.recording_stream.stop_stream()
